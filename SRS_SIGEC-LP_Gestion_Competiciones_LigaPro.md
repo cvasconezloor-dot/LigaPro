@@ -75,12 +75,14 @@ Aplicación web Next.js con App Router. Supabase presta Auth, PostgreSQL, RLS, S
 3. **Planilla COMET:** selección de encuentro, consulta de elegibilidad, validación de nóminas y revisión del acta.
 4. **Consola en vivo:** reloj de interfaz, marcador, incidencias, cronología, VAR e integridad.
 5. **Disciplina:** indicadores, alertas, libro de sanciones y creación de resoluciones.
+6. **Aficionados:** registro, perfil personal, pronósticos 1X2 con puntos virtuales e historial.
 
 ### 2.3 Actores
 
 | Actor | Descripción | Permisos | Nivel técnico |
 |---|---|---|---|
 | Visitante público | Consulta contenido publicado. | Lectura de competencias, clubes, calendario, resultados y clasificación pública. | Básico |
+| Aficionado registrado | Personaliza su cuenta y realiza pronósticos recreativos. | Edita su perfil; consulta su saldo e historial; envía un pronóstico en partidos futuros. | Básico |
 | Administrador | Administra cuentas, datos y configuración. | Acceso total a través de políticas RLS. | Intermedio |
 | Organizador | Gestiona competencias, fases, clubes y calendario. | CRUD de competencia y programación según políticas. | Intermedio |
 | Comisario | Supervisa partido y acta. | Consulta planilla; registra incidencias en encuentros asignados. | Básico |
@@ -96,7 +98,7 @@ Navegadores vigentes de escritorio y móvil; pantallas de 360 px en adelante; co
 
 - La aplicación usa la URL y la clave pública publishable de Supabase. No se usa `service_role` en cliente ni repositorio.
 - La autorización se impone en PostgreSQL mediante RLS; ocultar controles en la interfaz no constituye una barrera de seguridad.
-- COMET, correo, pagos, VAR y firma digital requieren credenciales y acuerdos externos no entregados.
+- COMET, correo, VAR y firma digital requieren credenciales y acuerdos externos no entregados. Los pronósticos de aficionado usan solo puntos virtuales, no pagos.
 - Los clubes, marcadores y temporada 2024 que aparecen en el ZIP son datos de demostración.
 
 ### 2.6 Supuestos y dependencias
@@ -384,7 +386,7 @@ Clasificación por serie; partidos por jornada/estado; goles derivados de result
 
 ## 8. Requisitos de interfaz
 
-### 8.1 Inventario de pantallas — 27 pantallas
+### 8.1 Inventario de pantallas — 30 pantallas (27 originales + 3 de aficionado)
 
 | PAN | Pantalla | Rol | RF |
 |---|---|---|---|
@@ -415,6 +417,9 @@ Clasificación por serie; partidos por jornada/estado; goles derivados de result
 | PAN-025 | Alertas disciplinarias | Disciplina | RF-014 |
 | PAN-026 | Libro de sanciones | Disciplina, administrador | RF-013, RF-014 |
 | PAN-027 | Nueva resolución disciplinaria | Disciplina | RF-013 |
+| PAN-028 | Pronósticos 1X2 | Aficionado registrado | RF-017 |
+| PAN-029 | Historial de pronósticos | Aficionado registrado | RF-018 |
+| PAN-030 | Registro y edición de perfil | Público, aficionado | RF-016 |
 
 ### 8.2 Navegación
 
@@ -629,7 +634,25 @@ Probar lectura anon de clasificación/fixture y denegación de perfiles, alineac
 
 ### 15.2 Entregables del proyecto
 
-- Aplicación Next.js con 27 vistas navegables en cinco módulos.
+- Aplicación Next.js con 30 vistas navegables en seis módulos.
 - Esquema SQL Supabase con Auth/RLS, clasificación pública, Realtime, buckets y datos marcados como demo.
 - Configuración Netlify, variables de entorno de ejemplo y guía de instalación en `README.md`.
 - Referencias Stitch extraídas en `design-reference/`.
+
+### 15.3 Adenda — Experiencia del aficionado y pronósticos virtuales
+
+Esta adenda amplía el alcance funcional de la versión original e incorpora el módulo social solicitado. No introduce apuestas con dinero real: los puntos no se compran, transfieren, retiran ni canjean por premios monetarios, y las cuotas 1X2 son ilustrativas.
+
+| ID | Requisito adicional | Criterio de aceptación |
+|---|---|---|
+| RF-016 | Registrar y completar el perfil de aficionado con nombre, apodo, ciudad opcional y club favorito opcional. | Solo la persona autenticada puede editar sus campos de perfil; no puede cambiar su rol institucional. |
+| RF-017 | Crear pronósticos 1X2 para partidos futuros programados usando puntos virtuales. | La base valida sesión, perfil completo, horario, selección, saldo, límite de 10–500 puntos y un pronóstico por usuario y partido. |
+| RF-018 | Consultar el historial propio y liquidar pronósticos al finalizar o cancelar un partido. | Al cerrar el partido se otorgan puntos virtuales según la cuota fija de demostración; si se suspende o cancela se devuelven los puntos utilizados. |
+
+| Pantalla | Contenido |
+|---|---|
+| PAN-028 | Pronósticos 1X2, saldo virtual y próximos partidos |
+| PAN-029 | Historial de pronósticos del usuario |
+| PAN-030 | Registro y edición de perfil de aficionado |
+
+La implementación usa `perfiles`, `carteras_virtuales` y `pronosticos_virtuales`, con RLS por usuario y una función RPC transaccional para descontar puntos. Un trigger liquida resultados desde el marcador oficial registrado en `partidos`.
