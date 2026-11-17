@@ -7,3 +7,6 @@ npm-debug.log*
 .DS_Store
 
 _netlify-upload/
+
+# Local Netlify folder
+.netlify
