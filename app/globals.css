@@ -436,6 +436,7 @@ input::placeholder { color: #a2a9b3; }
 .form-stack { display: grid; gap: 13px; }
 .form-stack label { min-width: 0; }
 .form-stack input { height: 39px; }
+.auth-switch { display: block; margin: 14px auto 0; padding: 4px; border: 0; color: #17325a; background: transparent; font-size: 10px; font-weight: 700; text-decoration: underline; text-underline-offset: 2px; }
 .auth-footnote { margin: 14px 0 0; color: #818a96; font-size: 9px; text-align: center; }
 
 @media (max-width: 1180px) {

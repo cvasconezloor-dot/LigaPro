@@ -123,6 +123,7 @@ export default function Home() {
   const [routingReady, setRoutingReady] = useState(false);
   const [notice, setNotice] = useState("");
   const [authOpen, setAuthOpen] = useState(false);
+  const [authMode, setAuthMode] = useState<"signin" | "signup">("signin");
   const [search, setSearch] = useState("");
   const [loginBusy, setLoginBusy] = useState(false);
   const [highContrast, setHighContrast] = useState(false);
@@ -247,6 +248,42 @@ export default function Home() {
     setRole((profile?.rol as Role) ?? null);
     setAuthOpen(false);
     setNotice(profile?.rol ? `Sesión iniciada como ${roleLabels[profile.rol] ?? profile.rol}.` : "Sesión iniciada. El administrador debe asignar un rol a tu perfil.");
+  }
+
+  async function signUp(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!supabase) return;
+    const form = new FormData(event.currentTarget);
+    const password = String(form.get("password"));
+    if (password !== String(form.get("password_confirm"))) {
+      setNotice("Las contraseñas no coinciden.");
+      return;
+    }
+
+    setLoginBusy(true);
+    const { data, error } = await supabase.auth.signUp({
+      email: String(form.get("email")),
+      password,
+      options: {
+        data: { full_name: String(form.get("full_name")).trim() },
+        emailRedirectTo: window.location.origin,
+      },
+    });
+    setLoginBusy(false);
+    if (error) {
+      setNotice("No se pudo crear la cuenta. Revisa el correo y la contraseña e inténtalo de nuevo.");
+      return;
+    }
+
+    setAuthOpen(false);
+    if (data.session && data.user) {
+      setUser(data.user);
+      const { data: profile } = await supabase.from("perfiles").select("rol").eq("id", data.user.id).maybeSingle();
+      setRole((profile?.rol as Role) ?? "publico");
+      setNotice("Cuenta creada. Tu rol inicial es público; el administrador puede habilitar módulos institucionales.");
+    } else {
+      setNotice("Cuenta creada. Revisa tu correo para confirmar el registro. Tu rol inicial será público.");
+    }
   }
 
   async function signOut() {
@@ -395,7 +432,26 @@ export default function Home() {
         <footer className="footer"><span>© 2026 LigaPro · Sistema de Gestión de Competiciones</span><span>27 pantallas · 5 módulos · Centro oficial de resultados y gobernanza</span></footer>
       </div>
 
-      {authOpen && <div className="modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setAuthOpen(false); }}><section className="auth-modal" role="dialog" aria-modal="true" aria-labelledby="login-title"><button className="modal-close" onClick={() => setAuthOpen(false)} aria-label="Cerrar">×</button><div className="brand-crest large">LP</div><p className="eyebrow">ACCESO INSTITUCIONAL</p><h2 id="login-title">Ingresa a tu cuenta</h2><p className="muted">La autorización de cada módulo se valida con el rol de tu perfil en Supabase.</p><form onSubmit={signIn} className="form-stack"><label>Correo electrónico<input name="email" type="email" required autoComplete="email" placeholder="nombre@ligapro.ec" /></label><label>Contraseña<input name="password" type="password" required autoComplete="current-password" placeholder="••••••••" /></label><button className="btn btn-gold full" disabled={loginBusy}>{loginBusy ? "Validando…" : "Iniciar sesión"}</button></form><p className="auth-footnote">Las cuentas y roles se administran desde Supabase Auth.</p></section></div>}
+      {authOpen && <div className="modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setAuthOpen(false); }}>
+        <section className="auth-modal" role="dialog" aria-modal="true" aria-labelledby="login-title">
+          <button className="modal-close" onClick={() => setAuthOpen(false)} aria-label="Cerrar">×</button>
+          <div className="brand-crest large">LP</div>
+          <p className="eyebrow">ACCESO INSTITUCIONAL</p>
+          <h2 id="login-title">{authMode === "signin" ? "Ingresa a tu cuenta" : "Crea tu cuenta"}</h2>
+          <p className="muted">El acceso a cada módulo depende del rol asignado a tu perfil.</p>
+          <form onSubmit={authMode === "signin" ? signIn : signUp} className="form-stack">
+            {authMode === "signup" && <label>Nombre completo<input name="full_name" type="text" required maxLength={80} autoComplete="name" placeholder="Tu nombre" /></label>}
+            <label>Correo electrónico<input name="email" type="email" required autoComplete="email" placeholder="nombre@ligapro.ec" /></label>
+            <label>Contraseña<input name="password" type="password" required minLength={8} autoComplete={authMode === "signup" ? "new-password" : "current-password"} placeholder="Mínimo 8 caracteres" /></label>
+            {authMode === "signup" && <label>Confirma la contraseña<input name="password_confirm" type="password" required minLength={8} autoComplete="new-password" placeholder="Repite tu contraseña" /></label>}
+            <button className="btn btn-gold full" disabled={loginBusy}>{loginBusy ? "Procesando…" : authMode === "signin" ? "Iniciar sesión" : "Crear cuenta"}</button>
+          </form>
+          <button className="auth-switch" type="button" onClick={() => setAuthMode(authMode === "signin" ? "signup" : "signin")}>
+            {authMode === "signin" ? "¿No tienes cuenta? Crear cuenta" : "¿Ya tienes cuenta? Iniciar sesión"}
+          </button>
+          <p className="auth-footnote">Las cuentas nuevas comienzan con rol público. Un administrador asigna los permisos institucionales.</p>
+        </section>
+      </div>}
     </main>
   );
 }

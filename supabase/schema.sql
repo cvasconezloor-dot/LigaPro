@@ -161,12 +161,29 @@ create table if not exists public.comunicados (
 
 create index if not exists fases_competencia_idx on public.fases(competencia_id, orden);
 create index if not exists jugadores_club_idx on public.jugadores(club_id, activo);
+create index if not exists perfiles_club_idx on public.perfiles(club_id) where club_id is not null;
 create index if not exists partidos_fecha_idx on public.partidos(competencia_id, fecha_hora);
-create index if not exists partidos_clubes_idx on public.partidos(club_local_id, club_visitante_id);
+create index if not exists partidos_fase_idx on public.partidos(fase_id) where fase_id is not null;
+create index if not exists partidos_club_local_idx on public.partidos(club_local_id);
+create index if not exists partidos_club_visitante_idx on public.partidos(club_visitante_id);
+create index if not exists partidos_comisario_idx on public.partidos(comisario_id) where comisario_id is not null;
+create index if not exists partidos_arbitro_idx on public.partidos(arbitro_id) where arbitro_id is not null;
 create index if not exists incidencias_partido_idx on public.incidencias(partido_id, minuto, created_at);
+create index if not exists incidencias_club_idx on public.incidencias(club_id);
+create index if not exists incidencias_jugador_idx on public.incidencias(jugador_id) where jugador_id is not null;
+create index if not exists incidencias_jugador_secundario_idx on public.incidencias(jugador_secundario_id) where jugador_secundario_id is not null;
+create index if not exists incidencias_registrado_por_idx on public.incidencias(registrado_por) where registrado_por is not null;
 create index if not exists alineaciones_partido_club_idx on public.alineaciones(partido_id, club_id, titular);
+create index if not exists alineaciones_jugador_idx on public.alineaciones(jugador_id);
+create index if not exists alineaciones_club_idx on public.alineaciones(club_id);
+create index if not exists actas_firmada_por_idx on public.actas(firmada_por) where firmada_por is not null;
 create index if not exists sanciones_jugador_estado_idx on public.sanciones(jugador_id, estado);
+create index if not exists sanciones_club_idx on public.sanciones(club_id);
+create index if not exists sanciones_partido_idx on public.sanciones(partido_id) where partido_id is not null;
+create index if not exists sanciones_incidencia_idx on public.sanciones(incidencia_id) where incidencia_id is not null;
+create index if not exists sanciones_resuelta_por_idx on public.sanciones(resuelta_por) where resuelta_por is not null;
 create index if not exists comunicados_publicacion_idx on public.comunicados(estado, publicado_at desc);
+create index if not exists comunicados_autor_idx on public.comunicados(autor_id) where autor_id is not null;
 
 create or replace function public.tocar_updated_at()
 returns trigger language plpgsql set search_path = public as $$
@@ -186,7 +203,7 @@ begin
 end $$;
 
 create or replace function public.crear_perfil_usuario()
-returns trigger language plpgsql security definer set search_path = public as $$
+returns trigger language plpgsql security definer set search_path = '' as $$
 begin
   insert into public.perfiles (id, nombre)
   values (new.id, coalesce(new.raw_user_meta_data ->> 'full_name', new.email, ''))
@@ -199,21 +216,49 @@ drop trigger if exists al_registrar_crear_perfil on auth.users;
 create trigger al_registrar_crear_perfil after insert on auth.users
 for each row execute function public.crear_perfil_usuario();
 
-create or replace function public.tiene_rol(roles public.rol_usuario[])
-returns boolean language sql stable security definer set search_path = public as $$
-  select exists (
+revoke all on function public.crear_perfil_usuario() from public, anon, authenticated, service_role;
+
+create schema if not exists private;
+revoke all on schema private from public, anon, authenticated, service_role;
+grant usage on schema private to authenticated;
+
+create or replace function private.tiene_rol(roles public.rol_usuario[])
+returns boolean language sql stable security definer set search_path = '' as $$
+  select (select auth.uid()) is not null and exists (
     select 1 from public.perfiles p
-    where p.id = auth.uid() and p.rol = any(roles)
+    where p.id = (select auth.uid()) and p.rol = any($1)
   );
 $$;
 
-create or replace function public.es_responsable_partido(partido uuid)
-returns boolean language sql stable security definer set search_path = public as $$
-  select exists (
+create or replace function private.es_responsable_partido(partido uuid)
+returns boolean language sql stable security definer set search_path = '' as $$
+  select (select auth.uid()) is not null and exists (
     select 1 from public.partidos p
-    where p.id = partido and (p.comisario_id = auth.uid() or p.arbitro_id = auth.uid())
+    where p.id = $1 and (p.comisario_id = (select auth.uid()) or p.arbitro_id = (select auth.uid()))
   );
 $$;
+
+revoke all on function private.tiene_rol(public.rol_usuario[]) from public, anon, service_role;
+revoke all on function private.es_responsable_partido(uuid) from public, anon, service_role;
+grant execute on function private.tiene_rol(public.rol_usuario[]) to authenticated;
+grant execute on function private.es_responsable_partido(uuid) to authenticated;
+
+create or replace function public.tiene_rol(roles public.rol_usuario[])
+returns boolean language sql stable security invoker set search_path = '' as $$
+  select private.tiene_rol($1);
+$$;
+
+create or replace function public.es_responsable_partido(partido uuid)
+returns boolean language sql stable security invoker set search_path = '' as $$
+  select private.es_responsable_partido($1);
+$$;
+
+revoke all on function public.tiene_rol(public.rol_usuario[]) from public, anon, service_role;
+revoke all on function public.es_responsable_partido(uuid) from public, anon, service_role;
+grant execute on function public.tiene_rol(public.rol_usuario[]) to authenticated;
+grant execute on function public.es_responsable_partido(uuid) to authenticated;
+
+revoke all on function public.tocar_updated_at() from public, anon, authenticated, service_role;
 
 drop view if exists public.clasificacion_publica;
 create view public.clasificacion_publica with (security_invoker = true) as
@@ -278,7 +323,7 @@ create policy clubes_staff_all on public.clubes for all to authenticated
 
 drop policy if exists perfiles_select_self_or_admin on public.perfiles;
 create policy perfiles_select_self_or_admin on public.perfiles for select to authenticated
-  using (id = auth.uid() or public.tiene_rol(array['administrador']::public.rol_usuario[]));
+  using (id = (select auth.uid()) or public.tiene_rol(array['administrador']::public.rol_usuario[]));
 drop policy if exists perfiles_update_admin on public.perfiles;
 create policy perfiles_update_admin on public.perfiles for update to authenticated
   using (public.tiene_rol(array['administrador']::public.rol_usuario[]))
@@ -300,7 +345,7 @@ create policy partidos_public_select on public.partidos for select using (
 drop policy if exists partidos_staff_select on public.partidos;
 create policy partidos_staff_select on public.partidos for select to authenticated
   using (public.tiene_rol(array['administrador','organizador','comisario','arbitro','disciplina']::public.rol_usuario[])
-    or comisario_id = auth.uid() or arbitro_id = auth.uid());
+    or comisario_id = (select auth.uid()) or arbitro_id = (select auth.uid()));
 drop policy if exists partidos_staff_insert on public.partidos;
 create policy partidos_staff_insert on public.partidos for insert to authenticated
   with check (public.tiene_rol(array['administrador','organizador','comisario']::public.rol_usuario[]));
@@ -315,19 +360,19 @@ create policy partidos_admin_delete on public.partidos for delete to authenticat
 drop policy if exists jugadores_staff_select on public.jugadores;
 create policy jugadores_staff_select on public.jugadores for select to authenticated
   using (public.tiene_rol(array['administrador','organizador','comisario','arbitro','disciplina']::public.rol_usuario[])
-    or exists (select 1 from public.perfiles p where p.id = auth.uid() and p.rol = 'club' and p.club_id = jugadores.club_id));
+    or exists (select 1 from public.perfiles p where p.id = (select auth.uid()) and p.rol = 'club' and p.club_id = jugadores.club_id));
 drop policy if exists jugadores_public_select on public.jugadores;
 create policy jugadores_public_select on public.jugadores for select using (false);
 drop policy if exists jugadores_staff_insert on public.jugadores;
 create policy jugadores_staff_insert on public.jugadores for insert to authenticated
   with check (public.tiene_rol(array['administrador','organizador']::public.rol_usuario[])
-    or exists (select 1 from public.perfiles p where p.id = auth.uid() and p.rol = 'club' and p.club_id = jugadores.club_id));
+    or exists (select 1 from public.perfiles p where p.id = (select auth.uid()) and p.rol = 'club' and p.club_id = jugadores.club_id));
 drop policy if exists jugadores_staff_update on public.jugadores;
 create policy jugadores_staff_update on public.jugadores for update to authenticated
   using (public.tiene_rol(array['administrador','organizador']::public.rol_usuario[])
-    or exists (select 1 from public.perfiles p where p.id = auth.uid() and p.rol = 'club' and p.club_id = jugadores.club_id))
+    or exists (select 1 from public.perfiles p where p.id = (select auth.uid()) and p.rol = 'club' and p.club_id = jugadores.club_id))
   with check (public.tiene_rol(array['administrador','organizador']::public.rol_usuario[])
-    or exists (select 1 from public.perfiles p where p.id = auth.uid() and p.rol = 'club' and p.club_id = jugadores.club_id));
+    or exists (select 1 from public.perfiles p where p.id = (select auth.uid()) and p.rol = 'club' and p.club_id = jugadores.club_id));
 drop policy if exists jugadores_admin_delete on public.jugadores;
 create policy jugadores_admin_delete on public.jugadores for delete to authenticated
   using (public.tiene_rol(array['administrador']::public.rol_usuario[]));
@@ -335,17 +380,17 @@ create policy jugadores_admin_delete on public.jugadores for delete to authentic
 drop policy if exists alineaciones_staff_select on public.alineaciones;
 create policy alineaciones_staff_select on public.alineaciones for select to authenticated
   using (public.tiene_rol(array['administrador','organizador','comisario','arbitro']::public.rol_usuario[])
-    or exists (select 1 from public.perfiles p where p.id = auth.uid() and p.rol = 'club' and p.club_id = alineaciones.club_id));
+    or exists (select 1 from public.perfiles p where p.id = (select auth.uid()) and p.rol = 'club' and p.club_id = alineaciones.club_id));
 drop policy if exists alineaciones_staff_insert on public.alineaciones;
 create policy alineaciones_staff_insert on public.alineaciones for insert to authenticated
   with check (public.tiene_rol(array['administrador','organizador','comisario','arbitro']::public.rol_usuario[])
-    or exists (select 1 from public.perfiles p where p.id = auth.uid() and p.rol = 'club' and p.club_id = alineaciones.club_id));
+    or exists (select 1 from public.perfiles p where p.id = (select auth.uid()) and p.rol = 'club' and p.club_id = alineaciones.club_id));
 drop policy if exists alineaciones_staff_update on public.alineaciones;
 create policy alineaciones_staff_update on public.alineaciones for update to authenticated
   using (public.tiene_rol(array['administrador','organizador','comisario','arbitro']::public.rol_usuario[])
-    or exists (select 1 from public.perfiles p where p.id = auth.uid() and p.rol = 'club' and p.club_id = alineaciones.club_id))
+    or exists (select 1 from public.perfiles p where p.id = (select auth.uid()) and p.rol = 'club' and p.club_id = alineaciones.club_id))
   with check (public.tiene_rol(array['administrador','organizador','comisario','arbitro']::public.rol_usuario[])
-    or exists (select 1 from public.perfiles p where p.id = auth.uid() and p.rol = 'club' and p.club_id = alineaciones.club_id));
+    or exists (select 1 from public.perfiles p where p.id = (select auth.uid()) and p.rol = 'club' and p.club_id = alineaciones.club_id));
 drop policy if exists alineaciones_admin_delete on public.alineaciones;
 create policy alineaciones_admin_delete on public.alineaciones for delete to authenticated
   using (public.tiene_rol(array['administrador']::public.rol_usuario[]));
