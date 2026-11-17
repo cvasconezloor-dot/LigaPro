@@ -1,0 +1,883 @@
+<!DOCTYPE html>
+
+<html lang="es"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><meta content="web_dashboard" name="shell-type"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" rel="stylesheet"/><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config={darkMode:"class",theme:{extend:{colors:{"surface-container-low":"#f3f4f6","surface-tint":"#4f5e7f","surface-container-high":"#e7e8ea","primary-fixed-dim":"#b6c7ec","surface-variant":"#e1e2e4","inverse-surface":"#2e3132","on-primary-fixed":"#091b38","surface-dim":"#d9dadc","on-surface-variant":"#44474d","secondary":"#735c00","surface-container-highest":"#e1e2e4","on-primary-container":"#7585a8","on-secondary-fixed-variant":"#574500","surface-bright":"#f8f9fb","surface":"#f8f9fb","secondary-container":"#fed65b","primary-container":"#0b1d3a","tertiary-fixed":"#6ffbbe","on-secondary":"#ffffff","on-secondary-container":"#745c00","error":"#ba1a1a","on-error-container":"#93000a","tertiary":"#000502","on-background":"#191c1e","on-primary":"#ffffff","inverse-primary":"#b6c7ec","primary":"#00030f","on-tertiary-fixed-variant":"#005236","on-tertiary-fixed":"#002113","on-surface":"#191c1e","background":"#f8f9fb","surface-container":"#edeef0","on-error":"#ffffff","secondary-fixed-dim":"#e9c349","inverse-on-surface":"#f0f1f3","on-tertiary":"#ffffff","surface-container-lowest":"#ffffff","primary-fixed":"#d7e2ff","tertiary-fixed-dim":"#4edea3","outline":"#75777e","tertiary-container":"#002315","on-secondary-fixed":"#241a00","on-primary-fixed-variant":"#374766","error-container":"#ffdad6","secondary-fixed":"#ffe088","on-tertiary-container":"#009869","outline-variant":"#c5c6ce"},borderRadius:{DEFAULT:"0.125rem",lg:"0.25rem",xl:"0.5rem",full:"0.75rem"},spacing:{"margin-desktop":"2rem",gutter:"1rem","space-sm":"0.5rem","gutter-desktop":"1.5rem",margin:"1rem","space-md":"0.75rem","space-lg":"1rem","space-xl":"1.5rem","space-xs":"0.25rem"},fontFamily:{"label-xs":["Inter"],"headline-lg":["Inter"],"body-md":["Inter"],"table-data":["Inter"],"headline-lg-mobile":["Inter"],"body-lg":["Inter"],"body-sm":["Inter"],"display-score":["Inter"],"headline-md":["Inter"],"timer-display":["Inter"],"headline-sm":["Inter"],"label-md":["Inter"]},fontSize:{"label-xs":["10px",{lineHeight:"12px",letterSpacing:"0.06em",fontWeight:"700"}],"headline-lg":["30px",{lineHeight:"36px",letterSpacing:"-0.02em",fontWeight:"700"}],"body-md":["13px",{lineHeight:"18px",fontWeight:"400"}],"table-data":["12px",{lineHeight:"16px",fontWeight:"500"}],"headline-lg-mobile":["22px",{lineHeight:"28px",letterSpacing:"-0.01em",fontWeight:"700"}],"body-lg":["15px",{lineHeight:"22px",fontWeight:"400"}],"body-sm":["12px",{lineHeight:"16px",fontWeight:"400"}],"display-score":["48px",{lineHeight:"52px",letterSpacing:"-0.03em",fontWeight:"800"}],"headline-md":["20px",{lineHeight:"26px",letterSpacing:"-0.01em",fontWeight:"600"}],"timer-display":["24px",{lineHeight:"28px",letterSpacing:"-0.01em",fontWeight:"700"}],"headline-sm":["16px",{lineHeight:"22px",fontWeight:"600"}],"label-md":["11px",{lineHeight:"14px",letterSpacing:"0.04em",fontWeight:"600"}]}}}};</script></head><body class="bg-surface font-body-md text-on-surface antialiased"><aside class="fixed left-0 top-0 h-full w-64 bg-primary-container text-on-primary z-50 flex flex-col justify-between shadow-[0_1px_8px_rgba(0,0,0,0.12)]"><div class="flex flex-col"><div class="h-16 px-space-lg flex items-center gap-space-md border-b border-on-primary-container/20"><img alt="LigaPro Ecuador Logo" class="h-8 w-auto object-contain" src="https://lh3.googleusercontent.com/aida/ALJJyrBm8w6hlbZqVFBntalu9VcuQshnPkM7w89W7edyEI0xbfohXlFpyuPz2knB-WJU9XTCiWY_iSf1CS1CKBD3xe2c6bJDAQqHEAymqvlfT-SMWAg4YopQoSS4254pU1GM7nAIM-lW8e40vuLSYD8jHC1vsIOU4y2MiDlvKLvPUotnKAh4LcylLV3nbpbU9_hgvQy12oJPrxTbL_5jEGvCXycDp548nhCbBKUBtbuvpGl3"/><div class="flex flex-col"><span class="font-headline-sm text-headline-sm uppercase tracking-tight text-surface-bright leading-none">LIGAPRO</span><span class="font-label-xs text-label-xs text-secondary-container uppercase">Sistema Operativo</span></div></div><div class="p-space-md"><div class="bg-surface-container-lowest/10 p-space-sm rounded-lg flex flex-col gap-space-xs"><span class="font-label-xs text-label-xs text-on-primary-container uppercase">División Oficial</span><div class="flex gap-space-xs"><button class="flex-1 py-space-xs px-space-sm rounded font-label-xs text-label-xs bg-secondary-container text-on-secondary-container font-bold text-center uppercase">Serie A</button><button class="flex-1 py-space-xs px-space-sm rounded font-label-xs text-label-xs bg-surface-container-lowest/10 text-primary-fixed hover:bg-surface-container-lowest/20 hover:text-surface-bright text-center uppercase transition-colors">Serie B</button></div></div></div><nav class="flex flex-col gap-space-xs px-space-md" data-active-classes="bg-surface-container-lowest text-primary font-bold rounded-lg shadow-sm"><a class="flex items-center gap-space-md px-space-md py-space-sm rounded-lg font-body-md text-body-md text-primary-fixed hover:bg-surface-container-lowest/10 hover:text-surface-bright transition-colors" data-path="portal-publico" href="#"><span class="material-symbols-outlined text-headline-sm">public</span>Portal Público</a><a class="flex items-center gap-space-md px-space-md py-space-sm rounded-lg font-body-md text-body-md text-primary-fixed hover:bg-surface-container-lowest/10 hover:text-surface-bright transition-colors" data-path="panel-de-torneos" href="#"><span class="material-symbols-outlined text-headline-sm">emoji_events</span>Panel Torneos</a><a class="flex items-center gap-space-md px-space-md py-space-sm rounded-lg font-body-md text-body-md text-primary-fixed hover:bg-surface-container-lowest/10 hover:text-surface-bright transition-colors" data-path="planilla-comet" href="#"><span class="material-symbols-outlined text-headline-sm">assignment_turned_in</span>Planilla COMET</a><a aria-current="page" class="flex items-center gap-space-md px-space-md py-space-sm transition-colors bg-surface-container-lowest text-primary font-bold rounded-lg shadow-sm" data-path="consola-en-vivo" href="#"><span class="material-symbols-outlined text-headline-sm">sports_soccer</span>Consola En Vivo</a><a class="flex items-center gap-space-md px-space-md py-space-sm rounded-lg font-body-md text-body-md text-primary-fixed hover:bg-surface-container-lowest/10 hover:text-surface-bright transition-colors" data-path="control-disciplinario" href="#"><span class="material-symbols-outlined text-headline-sm">gavel</span>Control Disciplinario</a></nav></div><div class="p-space-md border-t border-on-primary-container/20 flex flex-col gap-space-sm"><div class="flex items-center gap-space-sm"><span class="w-2.5 h-2.5 rounded-full bg-secondary-container"></span><span class="font-label-xs text-label-xs text-surface-dim uppercase">COMET Sync: Activo</span></div><div class="font-label-xs text-label-xs text-on-primary-container">Reglamento 2024 · v4.12</div></div></aside><div class="pl-64"><header class="fixed top-0 left-64 right-0 h-16 bg-surface-container-lowest/90 backdrop-blur-xl border-b border-surface-container-high z-40 flex items-center justify-between px-margin-desktop"><div class="flex items-center gap-space-md"><span class="font-label-xs text-label-xs bg-primary-container text-secondary-container px-space-sm py-space-xs rounded font-bold uppercase tracking-wider">Temporada 2024</span><span class="font-body-sm text-body-sm text-on-surface-variant font-medium">Fase Clasificatoria · Jornada Regular</span></div><div class="flex items-center gap-space-lg"><button class="relative p-space-xs text-on-surface-variant hover:text-on-surface"><span class="material-symbols-outlined text-headline-sm">notifications</span><span class="absolute top-1 right-1 w-2 h-2 rounded-full bg-error"></span></button><button class="p-space-xs text-on-surface-variant hover:text-on-surface"><span class="material-symbols-outlined text-headline-sm">help</span></button><div class="flex items-center gap-space-sm pl-space-md border-l border-surface-container-high"><div class="text-right hidden sm:block"><div class="font-label-md text-label-md text-on-surface font-semibold leading-tight">Comisario Nacional</div><div class="font-label-xs text-label-xs text-on-surface-variant">Acta N° 1084</div></div><img alt="Profile" class="w-8 h-8 rounded-full object-cover ring-2 ring-secondary-container" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCREAuqs_ghmCkh5jo1PtbmU-SZdsu503sertCQW54_RQuBlvzrteV-7lLZYGmjuZvwqp7qi2bN-J6JHQCwglfSSODphR8PbFp3unUQH02XVyasRPhxuSOcnPOq0xt8pQckX4DP2XqIMIuakWCyzaAQjzXPDFNUwDBFzeJJ0r-mfF8n13FxaRO5Du8Ksh4Wdrg12NHdgHVGbsj30q7XQkH0zVnqN_CmHHH0-Lw2lSI"/></div></div></header><main class="relative pt-16 bg-surface"><div class="flex flex-col w-full p-space-md lg:p-margin-desktop gap-space-lg">
+<!-- TOP HEADER CONSOLE META -->
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-space-md bg-surface-container-lowest p-space-md rounded-xl shadow-sm">
+<div class="flex items-center gap-space-md">
+<div class="w-10 h-10 rounded-lg bg-primary-container flex items-center justify-center text-secondary-container shadow-sm">
+<span class="material-symbols-outlined text-headline-sm" style="font-variation-settings: 'FILL' 1;">sports</span>
+</div>
+<div class="flex flex-col">
+<div class="flex items-center gap-space-sm">
+<span class="font-headline-sm text-headline-sm text-on-surface">Consola Oficial de Arbitraje y Comisaría</span>
+<span class="px-space-xs py-0.5 rounded font-label-xs text-label-xs bg-tertiary-container text-on-tertiary-container uppercase tracking-wider font-bold">En Línea COMET</span>
+</div>
+<div class="flex items-center gap-space-md text-on-surface-variant font-label-md text-label-md">
+<span>Estadio Banco Guayaquil, Sangolquí</span>
+<span>•</span>
+<span>Árbitro: Augusto Aragón (FIFA)</span>
+<span>•</span>
+<span class="text-secondary font-bold">Acta ID #LPRO-2024-F12-M03</span>
+</div>
+</div>
+</div>
+<div class="flex items-center gap-space-sm flex-wrap">
+<div class="bg-surface-container-high px-space-md py-space-xs rounded-lg flex items-center gap-space-sm">
+<span class="material-symbols-outlined text-headline-sm text-secondary">thermostat</span>
+<div class="flex flex-col">
+<span class="font-label-xs text-label-xs text-on-surface-variant uppercase">Clima Sangolquí</span>
+<span class="font-label-md text-label-md text-on-surface font-bold">21°C · Humedad 68%</span>
+</div>
+</div>
+<button class="bg-surface-container-high hover:bg-surface-container text-on-surface px-space-md py-space-sm rounded-lg font-label-md text-label-md flex items-center gap-space-xs transition-colors shadow-sm" id="btn-sync-comet">
+<span class="material-symbols-outlined text-headline-sm">sync</span>
+<span>Re-sincronizar COMET</span>
+</button>
+<button class="bg-error text-on-error hover:bg-on-error-container px-space-md py-space-sm rounded-lg font-label-md text-label-md flex items-center gap-space-xs transition-colors shadow-sm font-bold" id="btn-finalizar-acta">
+<span class="material-symbols-outlined text-headline-sm">lock_clock</span>
+<span>Cerrar Acta y Firma</span>
+</button>
+</div>
+</div>
+<!-- 1. MARCADOR CENTRAL EN VIVO -->
+<div class="relative overflow-hidden bg-primary-container text-on-primary rounded-xl p-space-lg lg:p-space-xl shadow-md">
+<!-- Subtle tactical grid visual accent -->
+<div class="absolute inset-0 bg-gradient-to-r from-primary-container via-surface-tint/20 to-primary-container pointer-events-none"></div>
+<div class="absolute -right-16 -top-16 w-64 h-64 bg-secondary-container/10 rounded-full blur-3xl pointer-events-none"></div>
+<div class="relative z-10 flex flex-col lg:flex-row items-center justify-between gap-space-lg">
+<!-- EQUIPO LOCAL -->
+<div class="flex items-center gap-space-md flex-1 justify-start">
+<div class="w-16 h-16 rounded-xl bg-surface-container-lowest/10 p-2 flex items-center justify-center shrink-0">
+<div class="w-12 h-12 rounded-full bg-primary flex items-center justify-center text-surface-bright font-headline-md text-headline-md font-bold shadow-inner">
+            IDV
+          </div>
+</div>
+<div class="flex flex-col">
+<span class="font-label-xs text-label-xs text-secondary-container uppercase tracking-wider font-bold">Local · Serie A</span>
+<span class="font-headline-lg text-headline-lg text-surface-bright tracking-tight">Independiente del Valle</span>
+<span class="font-body-sm text-body-sm text-primary-fixed-dim">DT: Javier Gandolfi</span>
+</div>
+</div>
+<!-- SCOREBOARD & CRONÓMETRO REGULATORIO -->
+<div class="flex flex-col items-center justify-center text-center px-space-xl py-space-sm bg-surface-container-lowest/5 rounded-xl backdrop-blur-sm">
+<!-- Live status pill -->
+<div class="flex items-center gap-space-sm mb-space-xs">
+<span class="relative flex h-3 w-3">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-secondary-container opacity-75"></span>
+<span class="relative inline-flex rounded-full h-3 w-3 bg-secondary-container"></span>
+</span>
+<span class="font-label-md text-label-md uppercase tracking-wider text-secondary-container font-bold">Segundo Tiempo</span>
+<span class="bg-surface-container-lowest/20 px-space-xs py-0.5 rounded font-label-xs text-label-xs text-surface-bright font-bold">+4 MIN ADICIÓN</span>
+</div>
+<!-- Big Score & Dynamic Chrono -->
+<div class="flex items-center gap-space-lg">
+<span class="font-display-score text-display-score text-surface-bright" id="score-home">2</span>
+<div class="flex flex-col items-center">
+<span class="font-timer-display text-timer-display text-secondary-fixed tracking-wider font-extrabold" id="main-timer">67:42</span>
+<span class="font-label-xs text-label-xs text-on-primary-container tracking-widest uppercase mt-0.5">En Juego</span>
+</div>
+<span class="font-display-score text-display-score text-surface-bright" id="score-away">1</span>
+</div>
+<!-- Quick timer toggle controls -->
+<div class="flex items-center gap-space-xs mt-space-sm">
+<button class="px-space-sm py-1 bg-surface-container-lowest/15 hover:bg-surface-container-lowest/25 text-surface-bright rounded text-label-xs font-label-xs transition-colors flex items-center gap-1" id="btn-timer-pause">
+<span class="material-symbols-outlined text-sm">pause</span> Detener Reloj
+          </button>
+<button class="px-space-sm py-1 bg-surface-container-lowest/15 hover:bg-surface-container-lowest/25 text-surface-bright rounded text-label-xs font-label-xs transition-colors flex items-center gap-1" id="btn-timer-add">
+<span class="material-symbols-outlined text-sm">more_time</span> +1' Adicional
+          </button>
+</div>
+</div>
+<!-- EQUIPO VISITANTE -->
+<div class="flex items-center gap-space-md flex-1 justify-end flex-row-reverse lg:flex-row text-right">
+<div class="flex flex-col">
+<span class="font-label-xs text-label-xs text-secondary-container uppercase tracking-wider font-bold">Visitante · Serie A</span>
+<span class="font-headline-lg text-headline-lg text-surface-bright tracking-tight">C.S. Emelec</span>
+<span class="font-body-sm text-body-sm text-primary-fixed-dim">DT: Leonel Álvarez</span>
+</div>
+<div class="w-16 h-16 rounded-xl bg-surface-container-lowest/10 p-2 flex items-center justify-center shrink-0">
+<div class="w-12 h-12 rounded-full bg-primary-fixed text-on-primary-fixed flex items-center justify-center font-headline-md text-headline-md font-bold shadow-inner">
+            CSE
+          </div>
+</div>
+</div>
+</div>
+</div>
+<!-- CONTROL QUOTA TRACKERS & STAT STRIP -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-space-md">
+<!-- Ventanas IDV -->
+<div class="bg-surface-container-lowest p-space-md rounded-xl shadow-sm flex flex-col gap-space-xs">
+<div class="flex justify-between items-center">
+<span class="font-label-xs text-label-xs text-on-surface-variant uppercase font-bold">Ventanas IDV</span>
+<span class="font-label-xs text-label-xs text-on-tertiary-container bg-tertiary-fixed/30 px-space-xs py-0.5 rounded font-bold">Reglamento IFAB</span>
+</div>
+<div class="flex items-baseline justify-between">
+<span class="font-headline-sm text-headline-sm text-on-surface">2 de 3 Usadas</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant font-medium">Cambios: 3/5</span>
+</div>
+<div class="w-full bg-surface-container-high h-2 rounded-full overflow-hidden flex">
+<div class="bg-secondary h-full w-2/3"></div>
+</div>
+<span class="font-label-xs text-label-xs text-on-surface-variant">Resta 1 ventana activa en juego</span>
+</div>
+<!-- Ventanas Emelec -->
+<div class="bg-surface-container-lowest p-space-md rounded-xl shadow-sm flex flex-col gap-space-xs">
+<div class="flex justify-between items-center">
+<span class="font-label-xs text-label-xs text-on-surface-variant uppercase font-bold">Ventanas CSE</span>
+<span class="font-label-xs text-label-xs text-on-tertiary-container bg-tertiary-fixed/30 px-space-xs py-0.5 rounded font-bold">Reglamento IFAB</span>
+</div>
+<div class="flex items-baseline justify-between">
+<span class="font-headline-sm text-headline-sm text-on-surface">1 de 3 Usadas</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant font-medium">Cambios: 1/5</span>
+</div>
+<div class="w-full bg-surface-container-high h-2 rounded-full overflow-hidden flex">
+<div class="bg-secondary h-full w-1/3"></div>
+</div>
+<span class="font-label-xs text-label-xs text-on-surface-variant">Restan 2 ventanas activas en juego</span>
+</div>
+<!-- Cupos Juveniles Sub-20 (LigaPro Rule) -->
+<div class="bg-surface-container-lowest p-space-md rounded-xl shadow-sm flex flex-col gap-space-xs">
+<div class="flex justify-between items-center">
+<span class="font-label-xs text-label-xs text-on-surface-variant uppercase font-bold">Regla Minutos Sub-20</span>
+<span class="font-label-xs text-label-xs text-secondary font-bold">Cumplimiento</span>
+</div>
+<div class="flex items-center justify-between">
+<div class="flex flex-col">
+<span class="font-label-md text-label-md text-on-surface font-bold">K. Arroyo (IDV)</span>
+<span class="font-label-xs text-label-xs text-on-surface-variant">68 min acumulados</span>
+</div>
+<span class="material-symbols-outlined text-headline-md text-on-tertiary-container">verified</span>
+</div>
+<span class="font-label-xs text-label-xs text-on-surface-variant">CSE registra Sub-20 en banca (J. Mina)</span>
+</div>
+<!-- Estado VAR & Tiempo Adicional Consumido -->
+<div class="bg-surface-container-lowest p-space-md rounded-xl shadow-sm flex flex-col gap-space-xs">
+<div class="flex justify-between items-center">
+<span class="font-label-xs text-label-xs text-on-surface-variant uppercase font-bold">Monitoreo VAR VOR</span>
+<span class="font-label-xs text-label-xs bg-surface-container-high text-on-surface px-space-xs py-0.5 rounded font-bold">Cabina Quito</span>
+</div>
+<div class="flex items-center justify-between">
+<div class="flex flex-col">
+<span class="font-headline-sm text-headline-sm text-on-surface">1 Chequeo</span>
+<span class="font-label-xs text-label-xs text-on-surface-variant">Minuto 33: Tiempo neto 2' 14"</span>
+</div>
+<span class="material-symbols-outlined text-headline-md text-primary-container">tv_options_edit_channels</span>
+</div>
+<span class="font-label-xs text-label-xs text-secondary font-bold">Compensación añadida automáticamente</span>
+</div>
+</div>
+<!-- 2. BOTONERA DE REGISTRO RÁPIDO (ERESPONSIVE TOUCH GRID) -->
+<div class="bg-surface-container-lowest p-space-lg rounded-xl shadow-sm flex flex-col gap-space-md">
+<div class="flex items-center justify-between flex-wrap gap-space-sm">
+<div class="flex items-center gap-space-sm">
+<span class="material-symbols-outlined text-headline-sm text-primary">touch_app</span>
+<span class="font-headline-md text-headline-md text-on-surface">Botonera de Acción Táctica Inmediata</span>
+<span class="font-label-xs text-label-xs text-on-surface-variant uppercase">Un toque para registrar</span>
+</div>
+<div class="flex items-center gap-space-xs">
+<span class="font-label-xs text-label-xs text-on-surface-variant">Equipo activo por defecto:</span>
+<div class="inline-flex rounded-lg bg-surface-container p-0.5" id="team-selector-toggle">
+<button class="px-space-sm py-1 text-label-xs font-label-xs rounded font-bold bg-primary-container text-on-primary shadow-sm team-toggle-btn" data-team="IDV">IDV (Local)</button>
+<button class="px-space-sm py-1 text-label-xs font-label-xs rounded font-bold text-on-surface hover:text-primary team-toggle-btn" data-team="CSE">CSE (Visita)</button>
+</div>
+</div>
+</div>
+<!-- High-Touch Trigger Pad -->
+<div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-space-md">
+<!-- BOTON GOL -->
+<button class="flex flex-col items-center justify-center p-space-md bg-primary-container hover:bg-primary text-on-primary rounded-xl shadow-md transition-all active:scale-95 group text-center h-28" id="btn-trigger-goal">
+<div class="w-10 h-10 rounded-full bg-secondary-container text-on-secondary-container flex items-center justify-center mb-space-xs group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-headline-md font-bold">sports_soccer</span>
+</div>
+<span class="font-headline-sm text-headline-sm text-surface-bright leading-none">GOL</span>
+<span class="font-label-xs text-label-xs text-secondary-container mt-1 uppercase tracking-wider font-semibold">Jugada / Penal / OG</span>
+</button>
+<!-- BOTON SUSTITUCION -->
+<button class="flex flex-col items-center justify-center p-space-md bg-surface-container-high hover:bg-surface-container-highest text-on-surface rounded-xl shadow-sm transition-all active:scale-95 group text-center h-28" id="btn-trigger-sub">
+<div class="w-10 h-10 rounded-full bg-tertiary-container text-on-tertiary-container flex items-center justify-center mb-space-xs group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-headline-md font-bold">swap_horiz</span>
+</div>
+<span class="font-headline-sm text-headline-sm leading-none">Sustitución</span>
+<span class="font-label-xs text-label-xs text-on-surface-variant mt-1 uppercase tracking-wider font-semibold">Ventana y Dorsales</span>
+</button>
+<!-- BOTON TARJETA AMARILLA -->
+<button class="flex flex-col items-center justify-center p-space-md bg-secondary-container hover:bg-secondary-fixed text-on-secondary-container rounded-xl shadow-sm transition-all active:scale-95 group text-center h-28" id="btn-trigger-yellow">
+<div class="w-10 h-10 rounded-lg bg-on-secondary-container/10 flex items-center justify-center mb-space-xs group-hover:scale-110 transition-transform">
+<span class="w-5 h-7 bg-secondary rounded-sm shadow-sm inline-block"></span>
+</div>
+<span class="font-headline-sm text-headline-sm font-bold leading-none">Amonestación</span>
+<span class="font-label-xs text-label-xs text-secondary mt-1 uppercase tracking-wider font-semibold">Tarjeta Amarilla</span>
+</button>
+<!-- BOTON TARJETA ROJA -->
+<button class="flex flex-col items-center justify-center p-space-md bg-error hover:bg-on-error-container text-on-error rounded-xl shadow-sm transition-all active:scale-95 group text-center h-28" id="btn-trigger-red">
+<div class="w-10 h-10 rounded-lg bg-surface-container-lowest/20 flex items-center justify-center mb-space-xs group-hover:scale-110 transition-transform">
+<span class="w-5 h-7 bg-surface-container-lowest rounded-sm shadow-sm inline-block"></span>
+</div>
+<span class="font-headline-sm text-headline-sm font-bold leading-none">Expulsión</span>
+<span class="font-label-xs text-label-xs text-error-container mt-1 uppercase tracking-wider font-semibold">Directa / 2ª Amarilla</span>
+</button>
+<!-- BOTON PAUSA HIDRATACION -->
+<button class="flex flex-col items-center justify-center p-space-md bg-surface-container-low hover:bg-surface-container text-on-surface rounded-xl shadow-sm transition-all active:scale-95 group text-center h-28" id="btn-trigger-hydration">
+<div class="w-10 h-10 rounded-full bg-primary-fixed text-on-primary-fixed flex items-center justify-center mb-space-xs group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-headline-md font-bold">water_drop</span>
+</div>
+<span class="font-headline-sm text-headline-sm leading-none">Hidratación</span>
+<span class="font-label-xs text-label-xs text-primary mt-1 uppercase tracking-wider font-semibold">Pausa 2:00 Min</span>
+</button>
+<!-- BOTON REVISION VAR -->
+<button class="flex flex-col items-center justify-center p-space-md bg-surface-container-high hover:bg-surface-container-highest text-on-surface rounded-xl shadow-sm transition-all active:scale-95 group text-center h-28" id="btn-trigger-var">
+<div class="w-10 h-10 rounded-full bg-primary-container text-secondary-container flex items-center justify-center mb-space-xs group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-headline-md font-bold">tv</span>
+</div>
+<span class="font-headline-sm text-headline-sm leading-none">Revisión VAR</span>
+<span class="font-label-xs text-label-xs text-on-surface-variant mt-1 uppercase tracking-wider font-semibold">OFR / Chequeo</span>
+</button>
+</div>
+</div>
+<!-- INTERACTION MODAL / DRAWER (DYNAMICALLY TRIGGERED) -->
+<div class="hidden bg-surface-container-lowest p-space-lg rounded-xl shadow-md flex flex-col gap-space-md transition-all" id="quick-action-drawer">
+<div class="flex items-center justify-between border-b pb-space-sm">
+<div class="flex items-center gap-space-sm">
+<span class="material-symbols-outlined text-headline-md text-primary" id="drawer-icon">edit</span>
+<span class="font-headline-md text-headline-md text-on-surface" id="drawer-title">Registrar Incidencia Rápida</span>
+</div>
+<button class="p-space-xs text-on-surface-variant hover:text-on-surface" id="btn-close-drawer">
+<span class="material-symbols-outlined">close</span>
+</button>
+</div>
+<!-- DYNAMIC FORM CONTAINER -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-space-md" id="drawer-form-content">
+<!-- Injected dynamically via JS depending on trigger -->
+</div>
+</div>
+<!-- SPLIT VIEW: LIVE MATCH EVENT LOG & COMET MINUTES VERIFICATION -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-space-lg">
+<!-- 3. LÍNEA DE TIEMPO INTERACTIVA (MATCH EVENT LOG) - 8 COLS -->
+<div class="lg:col-span-8 bg-surface-container-lowest p-space-lg rounded-xl shadow-sm flex flex-col gap-space-md">
+<div class="flex items-center justify-between flex-wrap gap-space-sm">
+<div class="flex items-center gap-space-sm">
+<span class="material-symbols-outlined text-headline-sm text-secondary">history_edu</span>
+<span class="font-headline-sm text-headline-sm text-on-surface">Línea de Tiempo Reglamentaria (Cronología Minuto a Minuto)</span>
+</div>
+<span class="font-label-xs text-label-xs text-on-surface-variant uppercase">Click en evento para editar observación</span>
+</div>
+<!-- Chronological Visual Feed -->
+<div class="flex flex-col gap-space-sm" id="events-timeline">
+<!-- Event 1: Gol IDV -->
+<div class="event-row flex items-start gap-space-md p-space-sm bg-surface-container-low hover:bg-surface-container rounded-lg cursor-pointer transition-colors" data-id="evt-1">
+<div class="w-10 h-10 rounded-full bg-primary-container text-secondary-container flex items-center justify-center shrink-0">
+<span class="font-label-md text-label-md font-bold">14'</span>
+</div>
+<div class="flex-1 flex flex-col">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-space-xs">
+<span class="material-symbols-outlined text-headline-sm text-primary">sports_soccer</span>
+<span class="font-label-md text-label-md text-on-surface font-bold">GOL · Independiente del Valle</span>
+<span class="font-label-xs text-label-xs bg-secondary-container text-on-secondary-container px-1.5 py-0.5 rounded font-bold">Jugada</span>
+</div>
+<span class="font-label-xs text-label-xs text-on-surface-variant">1T · 14:18</span>
+</div>
+<span class="font-body-md text-body-md text-on-surface mt-0.5">Dorsal #10 Junior Sornoza · Asistencia de dorsal #7 Kendry Páez.</span>
+<span class="font-label-xs text-label-xs text-secondary mt-1">Acta: Sin observaciones técnicas. Habilitado en planilla.</span>
+</div>
+<button class="text-on-surface-variant hover:text-primary p-space-xs">
+<span class="material-symbols-outlined text-headline-sm">edit_note</span>
+</button>
+</div>
+<!-- Event 2: Tarjeta Amarilla CSE -->
+<div class="event-row flex items-start gap-space-md p-space-sm bg-surface-container-low hover:bg-surface-container rounded-lg cursor-pointer transition-colors" data-id="evt-2">
+<div class="w-10 h-10 rounded-full bg-secondary-container text-on-secondary-container flex items-center justify-center shrink-0">
+<span class="font-label-md text-label-md font-bold">28'</span>
+</div>
+<div class="flex-1 flex flex-col">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-space-xs">
+<span class="w-3.5 h-5 bg-secondary rounded-sm inline-block shrink-0"></span>
+<span class="font-label-md text-label-md text-on-surface font-bold">Tarjeta Amarilla · C.S. Emelec</span>
+<span class="font-label-xs text-label-xs bg-surface-container-high text-on-surface px-1.5 py-0.5 rounded">Conducta antideportiva</span>
+</div>
+<span class="font-label-xs text-label-xs text-on-surface-variant">1T · 28:05</span>
+</div>
+<span class="font-body-md text-body-md text-on-surface mt-0.5">Dorsal #5 Roberto Garcés · Falta temeraria sobre adversario.</span>
+<span class="font-label-xs text-label-xs text-error mt-1 font-bold">Alerta: Acumula 4ª amarilla del campeonato (Riesgo de suspensión Art. 45 CD).</span>
+</div>
+<button class="text-on-surface-variant hover:text-primary p-space-xs">
+<span class="material-symbols-outlined text-headline-sm">edit_note</span>
+</button>
+</div>
+<!-- Event 3: Gol CSE -->
+<div class="event-row flex items-start gap-space-md p-space-sm bg-surface-container-low hover:bg-surface-container rounded-lg cursor-pointer transition-colors" data-id="evt-3">
+<div class="w-10 h-10 rounded-full bg-primary-fixed text-on-primary-fixed flex items-center justify-center shrink-0">
+<span class="font-label-md text-label-md font-bold">42'</span>
+</div>
+<div class="flex-1 flex flex-col">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-space-xs">
+<span class="material-symbols-outlined text-headline-sm text-primary">sports_soccer</span>
+<span class="font-label-md text-label-md text-on-surface font-bold">GOL · C.S. Emelec</span>
+<span class="font-label-xs text-label-xs bg-primary-fixed text-on-primary-fixed px-1.5 py-0.5 rounded font-bold">Tiro Penal</span>
+</div>
+<span class="font-label-xs text-label-xs text-on-surface-variant">1T · 41:50</span>
+</div>
+<span class="font-body-md text-body-md text-on-surface mt-0.5">Dorsal #9 Facundo Castelli · Cobro de penal ratificado por VAR.</span>
+<span class="font-label-xs text-label-xs text-secondary mt-1">Acta: Penal sancionado por mano deliberada en el área penal.</span>
+</div>
+<button class="text-on-surface-variant hover:text-primary p-space-xs">
+<span class="material-symbols-outlined text-headline-sm">edit_note</span>
+</button>
+</div>
+<!-- Event 4: Gol IDV 2-1 -->
+<div class="event-row flex items-start gap-space-md p-space-sm bg-surface-container-low hover:bg-surface-container rounded-lg cursor-pointer transition-colors" data-id="evt-4">
+<div class="w-10 h-10 rounded-full bg-primary-container text-secondary-container flex items-center justify-center shrink-0">
+<span class="font-label-md text-label-md font-bold">59'</span>
+</div>
+<div class="flex-1 flex flex-col">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-space-xs">
+<span class="material-symbols-outlined text-headline-sm text-primary">sports_soccer</span>
+<span class="font-label-md text-label-md text-on-surface font-bold">GOL · Independiente del Valle</span>
+<span class="font-label-xs text-label-xs bg-secondary-container text-on-secondary-container px-1.5 py-0.5 rounded font-bold">Cabeza</span>
+</div>
+<span class="font-label-xs text-label-xs text-on-surface-variant">2T · 58:44</span>
+</div>
+<span class="font-body-md text-body-md text-on-surface mt-0.5">Dorsal #19 Renzo López · Centro de esquina ejecutado por Sornoza.</span>
+<span class="font-label-xs text-label-xs text-secondary mt-1">Acta: Validado instantáneamente sin objeción técnica.</span>
+</div>
+<button class="text-on-surface-variant hover:text-primary p-space-xs">
+<span class="material-symbols-outlined text-headline-sm">edit_note</span>
+</button>
+</div>
+<!-- Event 5: Sustitución IDV -->
+<div class="event-row flex items-start gap-space-md p-space-sm bg-surface-container-low hover:bg-surface-container rounded-lg cursor-pointer transition-colors" data-id="evt-5">
+<div class="w-10 h-10 rounded-full bg-surface-container text-on-surface flex items-center justify-center shrink-0">
+<span class="font-label-md text-label-md font-bold">64'</span>
+</div>
+<div class="flex-1 flex flex-col">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-space-xs">
+<span class="material-symbols-outlined text-headline-sm text-on-tertiary-container">swap_horiz</span>
+<span class="font-label-md text-label-md text-on-surface font-bold">Doble Sustitución · Independiente del Valle</span>
+<span class="font-label-xs text-label-xs bg-surface-container-high text-on-surface px-1.5 py-0.5 rounded">Ventana 2 de 3</span>
+</div>
+<span class="font-label-xs text-label-xs text-on-surface-variant">2T · 63:30</span>
+</div>
+<div class="flex flex-col gap-0.5 mt-0.5">
+<span class="font-body-md text-body-md text-on-surface">Sale dorsal #8 Jordy Alcívar ➜ Entra dorsal #14 Cristian Zabala</span>
+<span class="font-body-md text-body-md text-on-surface">Sale dorsal #7 Kendry Páez ➜ Entra dorsal #11 Michael Hoyos</span>
+</div>
+<span class="font-label-xs text-label-xs text-secondary mt-1">Acta: Registrado por 4° árbitro sin demora reglamentaria.</span>
+</div>
+<button class="text-on-surface-variant hover:text-primary p-space-xs">
+<span class="material-symbols-outlined text-headline-sm">edit_note</span>
+</button>
+</div>
+</div>
+<!-- Quick Add Incident Inline Entry -->
+<div class="flex items-center gap-space-sm pt-space-xs">
+<input class="flex-1 bg-surface-container-low text-on-surface font-body-md text-body-md px-space-md py-space-sm rounded-lg focus:outline-none focus:bg-surface-container transition-colors" id="input-quick-note" placeholder="Añadir nota u observación arbitral suplementaria (ej: amonestación a banca, reclamo)..." type="text"/>
+<button class="bg-primary-container text-on-primary hover:bg-primary px-space-md py-space-sm rounded-lg font-label-md text-label-md font-bold transition-colors" id="btn-add-quick-note">
+          Añadir al Acta
+        </button>
+</div>
+</div>
+<!-- SIDEBAR: SQUAD ROSTER TOUCH MONITOR (4 COLS) -->
+<div class="lg:col-span-4 flex flex-col gap-space-md">
+<!-- Panel de Roster Activo en Cancha -->
+<div class="bg-surface-container-lowest p-space-md rounded-xl shadow-sm flex flex-col gap-space-sm">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-space-xs">
+<span class="material-symbols-outlined text-headline-sm text-primary">groups</span>
+<span class="font-headline-sm text-headline-sm text-on-surface">Alineación Activa</span>
+</div>
+<span class="font-label-xs text-label-xs text-on-surface-variant uppercase font-bold">11 Titulares</span>
+</div>
+<!-- Tab switches for Local/Visitante squad list -->
+<div class="flex gap-space-xs bg-surface-container p-0.5 rounded-lg">
+<button class="flex-1 py-1 rounded font-label-xs text-label-xs font-bold bg-surface-container-lowest text-primary shadow-sm" id="tab-roster-idv">IDV (11 en campo)</button>
+<button class="flex-1 py-1 rounded font-label-xs text-label-xs font-bold text-on-surface-variant hover:text-on-surface" id="tab-roster-cse">CSE (11 en campo)</button>
+</div>
+<!-- Roster players list (compact table-like layout) -->
+<div class="flex flex-col gap-1 max-h-96 overflow-y-auto pr-1" id="roster-container">
+<div class="flex items-center justify-between p-space-xs hover:bg-surface-container-low rounded">
+<div class="flex items-center gap-space-sm">
+<span class="w-6 h-6 rounded-full bg-primary-container text-secondary-container text-label-xs font-bold flex items-center justify-center">1</span>
+<span class="font-label-md text-label-md font-bold text-on-surface">Moisés Ramírez</span>
+<span class="font-label-xs text-label-xs text-on-surface-variant">(POR)</span>
+</div>
+<span class="font-label-xs text-label-xs text-on-tertiary-container bg-tertiary-fixed/30 px-1 py-0.5 rounded">Habilitado</span>
+</div>
+<div class="flex items-center justify-between p-space-xs hover:bg-surface-container-low rounded">
+<div class="flex items-center gap-space-sm">
+<span class="w-6 h-6 rounded-full bg-primary-container text-secondary-container text-label-xs font-bold flex items-center justify-center">2</span>
+<span class="font-label-md text-label-md font-bold text-on-surface">Matías Fernández</span>
+<span class="font-label-xs text-label-xs text-on-surface-variant">(DEF)</span>
+</div>
+<span class="font-label-xs text-label-xs text-on-tertiary-container bg-tertiary-fixed/30 px-1 py-0.5 rounded">Habilitado</span>
+</div>
+<div class="flex items-center justify-between p-space-xs hover:bg-surface-container-low rounded">
+<div class="flex items-center gap-space-sm">
+<span class="w-6 h-6 rounded-full bg-primary-container text-secondary-container text-label-xs font-bold flex items-center justify-center">5</span>
+<span class="font-label-md text-label-md font-bold text-on-surface">Richard Schunke</span>
+<span class="font-label-xs text-label-xs text-secondary font-bold">(C)</span>
+</div>
+<span class="font-label-xs text-label-xs text-on-tertiary-container bg-tertiary-fixed/30 px-1 py-0.5 rounded">Habilitado</span>
+</div>
+<div class="flex items-center justify-between p-space-xs hover:bg-surface-container-low rounded">
+<div class="flex items-center gap-space-sm">
+<span class="w-6 h-6 rounded-full bg-primary-container text-secondary-container text-label-xs font-bold flex items-center justify-center">10</span>
+<span class="font-label-md text-label-md font-bold text-on-surface">Junior Sornoza</span>
+<span class="material-symbols-outlined text-sm text-secondary">sports_soccer</span>
+</div>
+<span class="font-label-xs text-label-xs bg-secondary-container text-on-secondary-container px-1 py-0.5 rounded font-bold">Gol 14'</span>
+</div>
+<div class="flex items-center justify-between p-space-xs hover:bg-surface-container-low rounded">
+<div class="flex items-center gap-space-sm">
+<span class="w-6 h-6 rounded-full bg-primary-container text-secondary-container text-label-xs font-bold flex items-center justify-center">19</span>
+<span class="font-label-md text-label-md font-bold text-on-surface">Renzo López</span>
+<span class="material-symbols-outlined text-sm text-secondary">sports_soccer</span>
+</div>
+<span class="font-label-xs text-label-xs bg-secondary-container text-on-secondary-container px-1 py-0.5 rounded font-bold">Gol 59'</span>
+</div>
+<div class="flex items-center justify-between p-space-xs hover:bg-surface-container-low rounded bg-surface-container-low/50">
+<div class="flex items-center gap-space-sm opacity-60">
+<span class="w-6 h-6 rounded-full bg-surface-variant text-on-surface text-label-xs font-bold flex items-center justify-center">7</span>
+<span class="font-label-md text-label-md line-through text-on-surface">Kendry Páez</span>
+<span class="font-label-xs text-label-xs text-on-surface-variant">(Sub-20)</span>
+</div>
+<span class="font-label-xs text-label-xs text-error font-bold">Salió 64'</span>
+</div>
+<div class="flex items-center justify-between p-space-xs hover:bg-surface-container-low rounded">
+<div class="flex items-center gap-space-sm">
+<span class="w-6 h-6 rounded-full bg-tertiary-container text-on-tertiary-container text-label-xs font-bold flex items-center justify-center">11</span>
+<span class="font-label-md text-label-md font-bold text-on-surface">Michael Hoyos</span>
+<span class="font-label-xs text-label-xs text-on-surface-variant">(DEL)</span>
+</div>
+<span class="font-label-xs text-label-xs text-on-tertiary-container bg-tertiary-fixed/30 px-1 py-0.5 rounded font-bold">Entró 64'</span>
+</div>
+</div>
+</div>
+<!-- Protocolo de Validación Árbitro Central & Comisario LigaPro -->
+<div class="bg-primary-container text-on-primary p-space-md rounded-xl shadow-sm flex flex-col gap-space-sm">
+<div class="flex items-center gap-space-xs">
+<span class="material-symbols-outlined text-headline-sm text-secondary-container">fact_check</span>
+<span class="font-headline-sm text-headline-sm text-surface-bright">Panel de Integridad y VAR</span>
+</div>
+<div class="flex flex-col gap-space-xs text-primary-fixed-dim font-label-md text-label-md">
+<div class="flex justify-between items-center py-1 border-b border-on-primary-container/20">
+<span>VAR Principal:</span>
+<span class="text-surface-bright font-bold">Carlos Orbe (Pichincha)</span>
+</div>
+<div class="flex justify-between items-center py-1 border-b border-on-primary-container/20">
+<span>AVAR:</span>
+<span class="text-surface-bright font-bold">Mónica Amboya (Chimborazo)</span>
+</div>
+<div class="flex justify-between items-center py-1">
+<span>Comisario de Partido:</span>
+<span class="text-surface-bright font-bold">Wilson León (LigaPro)</span>
+</div>
+</div>
+<div class="mt-space-xs bg-surface-container-lowest/10 p-space-sm rounded-lg flex items-center justify-between">
+<div class="flex items-center gap-space-xs">
+<span class="w-2.5 h-2.5 rounded-full bg-tertiary-fixed"></span>
+<span class="font-label-xs text-label-xs text-surface-bright uppercase">Cifrado Hash de Acta OK</span>
+</div>
+<span class="font-label-xs text-label-xs text-secondary-container font-mono">SHA-256 #89c4</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- INTERACTIVE CONSOLE CONTROLLER JAVASCRIPT -->
+<script>
+  (function initMatchConsole() {
+    let homeScore = 2;
+    let awayScore = 1;
+    let selectedTeam = 'IDV';
+    let idvSubsUsed = 3;
+    let idvWindowsUsed = 2;
+    let cseSubsUsed = 1;
+    let cseWindowsUsed = 1;
+    let hydrationTimer = null;
+    let hydrationSeconds = 120;
+
+    const drawer = document.getElementById('quick-action-drawer');
+    const drawerTitle = document.getElementById('drawer-title');
+    const drawerIcon = document.getElementById('drawer-icon');
+    const drawerForm = document.getElementById('drawer-form-content');
+    const timeline = document.getElementById('events-timeline');
+    const teamButtons = document.querySelectorAll('.team-toggle-btn');
+
+    // Team switch handler
+    teamButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        teamButtons.forEach(b => {
+          b.classList.remove('bg-primary-container', 'text-on-primary', 'shadow-sm');
+          b.classList.add('text-on-surface');
+        });
+        btn.classList.add('bg-primary-container', 'text-on-primary', 'shadow-sm');
+        btn.classList.remove('text-on-surface');
+        selectedTeam = btn.getAttribute('data-team');
+      });
+    });
+
+    // Close Drawer
+    document.getElementById('btn-close-drawer')?.addEventListener('click', () => {
+      drawer.classList.add('hidden');
+    });
+
+    // 1. ACTION: REGISTRAR GOL
+    document.getElementById('btn-trigger-goal')?.addEventListener('click', () => {
+      drawer.classList.remove('hidden');
+      drawerTitle.textContent = `Registrar Gol Inmediato — ${selectedTeam === 'IDV' ? 'Independiente del Valle' : 'C.S. Emelec'}`;
+      drawerIcon.textContent = 'sports_soccer';
+      
+      const currentMinute = document.getElementById('main-timer').textContent.split(':')[0] || '68';
+
+      drawerForm.innerHTML = `
+        <div class="flex flex-col gap-1">
+          <label class="font-label-xs text-label-xs text-on-surface-variant font-bold uppercase">Equipo Beneficiado</label>
+          <select id="goal-team-select" class="bg-surface-container text-on-surface font-body-md text-body-md p-space-sm rounded-lg">
+            <option value="IDV" ${selectedTeam === 'IDV' ? 'selected' : ''}>Independiente del Valle</option>
+            <option value="CSE" ${selectedTeam === 'CSE' ? 'selected' : ''}>C.S. Emelec</option>
+          </select>
+        </div>
+        <div class="flex flex-col gap-1">
+          <label class="font-label-xs text-label-xs text-on-surface-variant font-bold uppercase">Dorsal y Anotador</label>
+          <input id="goal-scorer" type="text" placeholder="Ej: #10 Junior Sornoza" value="${selectedTeam === 'IDV' ? '#10 Junior Sornoza' : '#9 Facundo Castelli'}" class="bg-surface-container text-on-surface font-body-md text-body-md p-space-sm rounded-lg">
+        </div>
+        <div class="flex flex-col gap-1">
+          <label class="font-label-xs text-label-xs text-on-surface-variant font-bold uppercase">Tipo de Gol</label>
+          <select id="goal-type" class="bg-surface-container text-on-surface font-body-md text-body-md p-space-sm rounded-lg">
+            <option value="Jugada de Campo">Jugada de Campo</option>
+            <option value="Tiro Penal">Tiro Penal Oficial</option>
+            <option value="Tiro Libre Directo">Tiro Libre Directo</option>
+            <option value="Autogol (En contra)">Autogol (En contra)</option>
+          </select>
+        </div>
+        <div class="md:col-span-3 flex justify-end gap-space-sm mt-space-sm">
+          <button id="cancel-drawer" class="px-space-md py-space-sm rounded-lg font-label-md text-label-md bg-surface-container text-on-surface">Cancelar</button>
+          <button id="confirm-goal" class="px-space-md py-space-sm rounded-lg font-label-md text-label-md font-bold bg-primary text-on-primary">Confirmar y Asignar al Marcador</button>
+        </div>
+      `;
+
+      document.getElementById('cancel-drawer')?.addEventListener('click', () => drawer.classList.add('hidden'));
+      document.getElementById('confirm-goal')?.addEventListener('click', () => {
+        const team = document.getElementById('goal-team-select').value;
+        const scorer = document.getElementById('goal-scorer').value;
+        const type = document.getElementById('goal-type').value;
+
+        if (team === 'IDV') {
+          homeScore += 1;
+          document.getElementById('score-home').textContent = homeScore;
+        } else {
+          awayScore += 1;
+          document.getElementById('score-away').textContent = awayScore;
+        }
+
+        // Add to timeline
+        appendTimelineEvent(`${currentMinute}'`, 'sports_soccer', `GOL · ${team === 'IDV' ? 'Independiente del Valle' : 'C.S. Emelec'}`, type, scorer, 'Acta: Validado instantáneamente y transmitido a COMET.');
+        drawer.classList.add('hidden');
+      });
+    });
+
+    // 2. ACTION: SUSTITUCION CON VALIDACION DE VENTANAS
+    document.getElementById('btn-trigger-sub')?.addEventListener('click', () => {
+      drawer.classList.remove('hidden');
+      drawerTitle.textContent = `Registrar Sustitución Reglamentaria — ${selectedTeam === 'IDV' ? 'Independiente' : 'Emelec'}`;
+      drawerIcon.textContent = 'swap_horiz';
+
+      const currentWindows = selectedTeam === 'IDV' ? idvWindowsUsed : cseWindowsUsed;
+      const currentSubs = selectedTeam === 'IDV' ? idvSubsUsed : cseSubsUsed;
+      const currentMinute = document.getElementById('main-timer').textContent.split(':')[0] || '68';
+
+      let windowWarning = '';
+      if (currentWindows >= 3) {
+        windowWarning = `<div class="md:col-span-3 p-space-sm bg-error-container text-on-error-container font-label-md text-label-md rounded-lg font-bold">ALERTA REGLAMENTARIA: El equipo ha alcanzado el límite máximo permitido de 3 ventanas activas en juego reglamentario (IFAB).</div>`;
+      }
+
+      drawerForm.innerHTML = `
+        ${windowWarning}
+        <div class="flex flex-col gap-1">
+          <label class="font-label-xs text-label-xs text-on-surface-variant font-bold uppercase">Equipo</label>
+          <select id="sub-team-select" class="bg-surface-container text-on-surface font-body-md text-body-md p-space-sm rounded-lg">
+            <option value="IDV" ${selectedTeam === 'IDV' ? 'selected' : ''}>IDV (Sustituciones: ${idvSubsUsed}/5 · Ventanas: ${idvWindowsUsed}/3)</option>
+            <option value="CSE" ${selectedTeam === 'CSE' ? 'selected' : ''}>CSE (Sustituciones: ${cseSubsUsed}/5 · Ventanas: ${cseWindowsUsed}/3)</option>
+          </select>
+        </div>
+        <div class="flex flex-col gap-1">
+          <label class="font-label-xs text-label-xs text-on-surface-variant font-bold uppercase">Jugador que SALE (Dorsal)</label>
+          <input id="sub-player-out" type="text" placeholder="Ej: #8 Jordy Alcívar" class="bg-surface-container text-on-surface font-body-md text-body-md p-space-sm rounded-lg">
+        </div>
+        <div class="flex flex-col gap-1">
+          <label class="font-label-xs text-label-xs text-on-surface-variant font-bold uppercase">Jugador que ENTRA (Dorsal)</label>
+          <input id="sub-player-in" type="text" placeholder="Ej: #14 Cristian Zabala" class="bg-surface-container text-on-surface font-body-md text-body-md p-space-sm rounded-lg">
+        </div>
+        <div class="md:col-span-3 flex justify-between items-center mt-space-sm">
+          <label class="flex items-center gap-space-xs font-label-md text-label-md text-on-surface-variant cursor-pointer">
+            <input type="checkbox" id="sub-same-window" class="rounded">
+            <span>Sustitución en la misma ventana (doble cambio simultáneo)</span>
+          </label>
+          <div class="flex gap-space-sm">
+            <button id="cancel-drawer" class="px-space-md py-space-sm rounded-lg font-label-md text-label-md bg-surface-container text-on-surface">Cancelar</button>
+            <button id="confirm-sub" class="px-space-md py-space-sm rounded-lg font-label-md text-label-md font-bold bg-primary text-on-primary">Autorizar y Registrar</button>
+          </div>
+        </div>
+      `;
+
+      document.getElementById('cancel-drawer')?.addEventListener('click', () => drawer.classList.add('hidden'));
+      document.getElementById('confirm-sub')?.addEventListener('click', () => {
+        const team = document.getElementById('sub-team-select').value;
+        const playerOut = document.getElementById('sub-player-out').value || '#00 Saliente';
+        const playerIn = document.getElementById('sub-player-in').value || '#99 Entrante';
+        const sameWindow = document.getElementById('sub-same-window').checked;
+
+        if (team === 'IDV') {
+          idvSubsUsed += 1;
+          if (!sameWindow) idvWindowsUsed = Math.min(3, idvWindowsUsed + 1);
+        } else {
+          cseSubsUsed += 1;
+          if (!sameWindow) cseWindowsUsed = Math.min(3, cseWindowsUsed + 1);
+        }
+
+        appendTimelineEvent(`${currentMinute}'`, 'swap_horiz', `Sustitución · ${team}`, `Ventana utilizada`, `Sale ${playerOut} ➜ Entra ${playerIn}`, 'Acta: Ingreso verificado por 4° Oficial.');
+        drawer.classList.add('hidden');
+      });
+    });
+
+    // 3. ACTION: TARJETA AMARILLA
+    document.getElementById('btn-trigger-yellow')?.addEventListener('click', () => {
+      drawer.classList.remove('hidden');
+      drawerTitle.textContent = `Registrar Tarjeta Amarilla (Amonestación)`;
+      drawerIcon.textContent = 'warning';
+      const currentMinute = document.getElementById('main-timer').textContent.split(':')[0] || '68';
+
+      drawerForm.innerHTML = `
+        <div class="flex flex-col gap-1">
+          <label class="font-label-xs text-label-xs text-on-surface-variant font-bold uppercase">Equipo</label>
+          <select id="card-team-select" class="bg-surface-container text-on-surface font-body-md text-body-md p-space-sm rounded-lg">
+            <option value="IDV" ${selectedTeam === 'IDV' ? 'selected' : ''}>Independiente del Valle</option>
+            <option value="CSE" ${selectedTeam === 'CSE' ? 'selected' : ''}>C.S. Emelec</option>
+          </select>
+        </div>
+        <div class="flex flex-col gap-1">
+          <label class="font-label-xs text-label-xs text-on-surface-variant font-bold uppercase">Jugador / Dorsal</label>
+          <input id="card-player" type="text" placeholder="Ej: #5 Roberto Garcés" class="bg-surface-container text-on-surface font-body-md text-body-md p-space-sm rounded-lg">
+        </div>
+        <div class="flex flex-col gap-1">
+          <label class="font-label-xs text-label-xs text-on-surface-variant font-bold uppercase">Infracción Codificada</label>
+          <select id="card-reason" class="bg-surface-container text-on-surface font-body-md text-body-md p-space-sm rounded-lg">
+            <option value="Conducta Antideportiva (Art. 39)">Conducta Antideportiva (Art. 39)</option>
+            <option value="Desaprobar con palabras o acciones">Desaprobar decisiones arbitrales</option>
+            <option value="Retardar la reanudación del juego">Retardar reanudación</option>
+            <option value="Infracción persistente de reglas">Infracción persistente</option>
+          </select>
+        </div>
+        <div class="md:col-span-3 flex justify-end gap-space-sm mt-space-sm">
+          <button id="cancel-drawer" class="px-space-md py-space-sm rounded-lg font-label-md text-label-md bg-surface-container text-on-surface">Cancelar</button>
+          <button id="confirm-yellow" class="px-space-md py-space-sm rounded-lg font-label-md text-label-md font-bold bg-secondary-container text-on-secondary-container">Asentar Amonestación</button>
+        </div>
+      `;
+
+      document.getElementById('cancel-drawer')?.addEventListener('click', () => drawer.classList.add('hidden'));
+      document.getElementById('confirm-yellow')?.addEventListener('click', () => {
+        const team = document.getElementById('card-team-select').value;
+        const player = document.getElementById('card-player').value || 'Dorsal no especificado';
+        const reason = document.getElementById('card-reason').value;
+
+        appendTimelineEvent(`${currentMinute}'`, 'flag', `Tarjeta Amarilla · ${team}`, reason, player, 'Acta: Notificado formalmente en campo.');
+        drawer.classList.add('hidden');
+      });
+    });
+
+    // 4. ACTION: TARJETA ROJA
+    document.getElementById('btn-trigger-red')?.addEventListener('click', () => {
+      drawer.classList.remove('hidden');
+      drawerTitle.textContent = `Registrar Tarjeta Roja (Expulsión Directa / 2ª Amarilla)`;
+      drawerIcon.textContent = 'report';
+      const currentMinute = document.getElementById('main-timer').textContent.split(':')[0] || '68';
+
+      drawerForm.innerHTML = `
+        <div class="flex flex-col gap-1">
+          <label class="font-label-xs text-label-xs text-on-surface-variant font-bold uppercase">Equipo</label>
+          <select id="red-team-select" class="bg-surface-container text-on-surface font-body-md text-body-md p-space-sm rounded-lg">
+            <option value="IDV">Independiente del Valle</option>
+            <option value="CSE" selected>C.S. Emelec</option>
+          </select>
+        </div>
+        <div class="flex flex-col gap-1">
+          <label class="font-label-xs text-label-xs text-on-surface-variant font-bold uppercase">Dorsal y Nombre</label>
+          <input id="red-player" type="text" placeholder="Ej: #3 Caicedo" class="bg-surface-container text-on-surface font-body-md text-body-md p-space-sm rounded-lg">
+        </div>
+        <div class="flex flex-col gap-1">
+          <label class="font-label-xs text-label-xs text-on-surface-variant font-bold uppercase">Causal de Expulsión</label>
+          <select id="red-reason" class="bg-surface-container text-on-surface font-body-md text-body-md p-space-sm rounded-lg">
+            <option value="Roja Directa - Juego Brusco Grave">Roja Directa - Juego Brusco Grave</option>
+            <option value="Roja Directa - Conducta Violenta">Roja Directa - Conducta Violenta</option>
+            <option value="Roja Directa - Malograr Oportunidad Manifiesta (DOGSO)">DOGSO (Oportunidad manifiesta de gol)</option>
+            <option value="Segunda Tarjeta Amarilla (Doble amonestación)">Segunda Tarjeta Amarilla (2A)</option>
+          </select>
+        </div>
+        <div class="md:col-span-3 flex justify-end gap-space-sm mt-space-sm">
+          <button id="cancel-drawer" class="px-space-md py-space-sm rounded-lg font-label-md text-label-md bg-surface-container text-on-surface">Cancelar</button>
+          <button id="confirm-red" class="px-space-md py-space-sm rounded-lg font-label-md text-label-md font-bold bg-error text-on-error">Confirmar Expulsión en Acta</button>
+        </div>
+      `;
+
+      document.getElementById('cancel-drawer')?.addEventListener('click', () => drawer.classList.add('hidden'));
+      document.getElementById('confirm-red')?.addEventListener('click', () => {
+        const team = document.getElementById('red-team-select').value;
+        const player = document.getElementById('red-player').value || 'Jugador no especificado';
+        const reason = document.getElementById('red-reason').value;
+
+        appendTimelineEvent(`${currentMinute}'`, 'gavel', `EXPULSIÓN · ${team}`, reason, player, 'Acta: Abandono obligatorio del perímetro de juego.');
+        drawer.classList.add('hidden');
+      });
+    });
+
+    // 5. ACTION: PAUSA DE HIDRATACIÓN CON TEMPORIZADOR 2 MINUTOS
+    document.getElementById('btn-trigger-hydration')?.addEventListener('click', () => {
+      drawer.classList.remove('hidden');
+      drawerTitle.textContent = `Pausa Oficial de Hidratación (2 Minutos Reglamentarios)`;
+      drawerIcon.textContent = 'water_drop';
+
+      drawerForm.innerHTML = `
+        <div class="md:col-span-3 flex flex-col items-center justify-center p-space-md bg-surface-container-high rounded-xl">
+          <span class="font-label-xs text-label-xs text-on-surface-variant uppercase font-bold">Temporizador de Hidratación</span>
+          <span id="hydration-counter" class="font-display-score text-display-score text-primary font-mono my-space-xs">02:00</span>
+          <span class="font-label-md text-label-md text-on-surface-variant">Activado de conformidad con el protocolo médico LigaPro.</span>
+          <div class="flex gap-space-sm mt-space-md">
+            <button id="btn-start-hydration" class="px-space-lg py-space-sm bg-primary text-on-primary rounded-lg font-label-md font-bold">Iniciar Conteo</button>
+            <button id="btn-stop-hydration" class="px-space-lg py-space-sm bg-surface-container-highest text-on-surface rounded-lg font-label-md">Finalizar y Reanudar</button>
+          </div>
+        </div>
+      `;
+
+      const counterDisplay = document.getElementById('hydration-counter');
+      document.getElementById('btn-start-hydration')?.addEventListener('click', () => {
+        clearInterval(hydrationTimer);
+        hydrationSeconds = 120;
+        hydrationTimer = setInterval(() => {
+          hydrationSeconds--;
+          const m = Math.floor(hydrationSeconds / 60).toString().padStart(2, '0');
+          const s = (hydrationSeconds % 60).toString().padStart(2, '0');
+          if (counterDisplay) counterDisplay.textContent = `${m}:${s}`;
+          if (hydrationSeconds <= 0) {
+            clearInterval(hydrationTimer);
+            alert('Atención 4° Árbitro: Concluyeron los 2 minutos oficiales de hidratación.');
+          }
+        }, 1000);
+      });
+
+      document.getElementById('btn-stop-hydration')?.addEventListener('click', () => {
+        clearInterval(hydrationTimer);
+        const currentMinute = document.getElementById('main-timer').textContent.split(':')[0] || '68';
+        appendTimelineEvent(`${currentMinute}'`, 'water_drop', `Pausa de Hidratación`, 'Protocolo Médico', 'Ambos equipos hidratados en banquillos.', 'Acta: 2 minutos exactos adicionados al tiempo reglamentario.');
+        drawer.classList.add('hidden');
+      });
+    });
+
+    // 6. ACTION: REVISION VAR
+    document.getElementById('btn-trigger-var')?.addEventListener('click', () => {
+      drawer.classList.remove('hidden');
+      drawerTitle.textContent = `Registro de Chequeo / Revisión en Pantalla VAR`;
+      drawerIcon.textContent = 'tv';
+      const currentMinute = document.getElementById('main-timer').textContent.split(':')[0] || '68';
+
+      drawerForm.innerHTML = `
+        <div class="flex flex-col gap-1">
+          <label class="font-label-xs text-label-xs text-on-surface-variant font-bold uppercase">Tipo de Intervención</label>
+          <select id="var-type" class="bg-surface-container text-on-surface font-body-md text-body-md p-space-sm rounded-lg">
+            <option value="Revisión en Campo (OFR - On Field Review)">Revisión en Campo (OFR - Pantalla)</option>
+            <option value="Chequeo Silencioso VOR">Chequeo Silencioso VOR</option>
+            <option value="Validación de Identidad Errónea">Validación de Identidad Errónea</option>
+          </select>
+        </div>
+        <div class="flex flex-col gap-1">
+          <label class="font-label-xs text-label-xs text-on-surface-variant font-bold uppercase">Incidencia Evaluada</label>
+          <input id="var-incident" type="text" placeholder="Ej: Posible penal por mano o falta en área" class="bg-surface-container text-on-surface font-body-md text-body-md p-space-sm rounded-lg">
+        </div>
+        <div class="flex flex-col gap-1">
+          <label class="font-label-xs text-label-xs text-on-surface-variant font-bold uppercase">Decisión Final en Terreno</label>
+          <select id="var-decision" class="bg-surface-container text-on-surface font-body-md text-body-md p-space-sm rounded-lg">
+            <option value="Decisión Ratificada (Se mantiene cobro)">Decisión Ratificada (Se mantiene cobro)</option>
+            <option value="Decisión Revertida (Modificación de fallo)">Decisión Revertida (Modificación de fallo)</option>
+            <option value="Sin infracción reglamentaria">Sin infracción reglamentaria</option>
+          </select>
+        </div>
+        <div class="md:col-span-3 flex justify-end gap-space-sm mt-space-sm">
+          <button id="cancel-drawer" class="px-space-md py-space-sm rounded-lg font-label-md text-label-md bg-surface-container text-on-surface">Cancelar</button>
+          <button id="confirm-var" class="px-space-md py-space-sm rounded-lg font-label-md text-label-md font-bold bg-primary text-on-primary">Asentar Tiempo VAR</button>
+        </div>
+      `;
+
+      document.getElementById('cancel-drawer')?.addEventListener('click', () => drawer.classList.add('hidden'));
+      document.getElementById('confirm-var')?.addEventListener('click', () => {
+        const type = document.getElementById('var-type').value;
+        const incident = document.getElementById('var-incident').value || 'Revisión técnica';
+        const decision = document.getElementById('var-decision').value;
+
+        appendTimelineEvent(`${currentMinute}'`, 'tv', `Protocolo VAR · ${type}`, decision, incident, 'Acta: Comunicación radial directa con VOR Sangolquí.');
+        drawer.classList.add('hidden');
+      });
+    });
+
+    // Helper: Timeline Row Injector
+    function appendTimelineEvent(minute, icon, title, badge, details, reportNote) {
+      const row = document.createElement('div');
+      row.className = 'event-row flex items-start gap-space-md p-space-sm bg-surface-container-low hover:bg-surface-container rounded-lg cursor-pointer transition-colors';
+      row.innerHTML = `
+        <div class="w-10 h-10 rounded-full bg-primary-container text-secondary-container flex items-center justify-center shrink-0">
+          <span class="font-label-md text-label-md font-bold">${minute}</span>
+        </div>
+        <div class="flex-1 flex flex-col">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-space-xs">
+              <span class="material-symbols-outlined text-headline-sm text-primary">${icon}</span>
+              <span class="font-label-md text-label-md text-on-surface font-bold">${title}</span>
+              <span class="font-label-xs text-label-xs bg-surface-container-high text-on-surface px-1.5 py-0.5 rounded font-bold">${badge}</span>
+            </div>
+            <span class="font-label-xs text-label-xs text-on-surface-variant">2T · En Vivo</span>
+          </div>
+          <span class="font-body-md text-body-md text-on-surface mt-0.5">${details}</span>
+          <span class="font-label-xs text-label-xs text-secondary mt-1">${reportNote}</span>
+        </div>
+        <button class="text-on-surface-variant hover:text-primary p-space-xs">
+          <span class="material-symbols-outlined text-headline-sm">edit_note</span>
+        </button>
+      `;
+      timeline.insertBefore(row, timeline.firstChild);
+    }
+
+    // Quick Note Manual Add
+    document.getElementById('btn-add-quick-note')?.addEventListener('click', () => {
+      const input = document.getElementById('input-quick-note');
+      if (input && input.value.trim() !== '') {
+        const currentMinute = document.getElementById('main-timer').textContent.split(':')[0] || '68';
+        appendTimelineEvent(`${currentMinute}'`, 'note_alt', 'Observación del Comisario', 'Anotación Libre', input.value.trim(), 'Acta: Ingresada manualmente para informe pospartido.');
+        input.value = '';
+      }
+    });
+
+    // Close Match Button Modal Trigger
+    document.getElementById('btn-finalizar-acta')?.addEventListener('click', () => {
+      const confirmed = confirm('¿Está seguro de finalizar los 90 minutos y generar el Acta Definitiva para suscripción digital de árbitros y delegados de clubes?');
+      if (confirmed) {
+        alert('Acta Arbitral #LPRO-2024-F12-M03 firmada y sincronizada al sistema COMET con éxito.');
+      }
+    });
+
+    // COMET sync simulation
+    document.getElementById('btn-sync-comet')?.addEventListener('click', (e) => {
+      const btn = e.currentTarget;
+      const originalText = btn.innerHTML;
+      btn.innerHTML = `<span class="material-symbols-outlined text-headline-sm animate-spin">refresh</span><span>Sincronizando...</span>`;
+      setTimeout(() => {
+        btn.innerHTML = `<span class="material-symbols-outlined text-headline-sm text-on-tertiary-container">done_all</span><span>Sincronizado</span>`;
+        setTimeout(() => { btn.innerHTML = originalText; }, 2000);
+      }, 1000);
+    });
+
+  })();
+</script></main></div></body></html>
