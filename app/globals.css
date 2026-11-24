@@ -855,3 +855,33 @@ input::placeholder { color: #a2a9b3; }
   .profile-password-actions { grid-column: 1; align-items: stretch; flex-direction: column; }
   .reset-card { padding: 22px; }
 }
+
+/* Data-driven standings, suspensions, and compact live console. */
+.form-dots { display: inline-flex; align-items: center; gap: 3px; color: inherit; letter-spacing: 0; }
+.form-result { display: inline-grid; width: 18px; height: 18px; place-items: center; border-radius: 50%; color: #fff; font-size: 8px; font-style: normal; font-weight: 800; }
+.form-result.g { background: #16865b; }
+.form-result.e { background: #7c8796; }
+.form-result.p { background: #c33a3a; }
+.expanded-table { min-width: 780px; }
+.suspension-inline-note { margin: 0 14px 10px; padding: 8px 10px; border-left: 3px solid #d43f3f; border-radius: 3px; color: #7d2525; background: #fff3f2; font-size: 9px; }
+.designation-select { display: grid; min-width: 0; gap: 4px; color: #707b89; font-size: 8px; }
+.designation-select select { min-width: 0; min-height: 34px; padding: 0 8px; border: 1px solid #d8dee7; border-radius: 4px; color: #243247; background: #fff; font-size: 9px; }
+.designation-select select:disabled { color: #7b8490; background: #f4f5f6; }
+@media (max-width: 640px) {
+  .live-scoreboard { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: auto auto; gap: 8px; padding: 13px 11px; }
+  .live-scoreboard .score-center { grid-column: 1 / -1; grid-row: 2; }
+  .live-scoreboard .score-side.away { grid-column: 2; grid-row: 1; }
+  .designation-row { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; }
+  .designation-row > div:first-child { grid-column: 1 / -1; }
+  .designation-select select { width: 100%; }
+}
+.lineup-player-row { grid-template-columns: 16px 25px minmax(0, 1fr) auto auto; }
+.lineup-player-row input[type="checkbox"] { width: 14px; height: 14px; margin: 0; accent-color: #174ba0; }
+@media (max-width: 640px) {
+  .lineup-player-row { grid-template-columns: 16px 22px minmax(0, 1fr) auto; gap: 6px; }
+  .lineup-player-row input { grid-column: 1; grid-row: 1; }
+  .lineup-player-row .jersey { grid-column: 2; grid-row: 1; }
+  .lineup-player-row > strong { grid-column: 3; grid-row: 1; }
+  .lineup-player-row .position-chip { grid-column: 4; grid-row: 1; }
+  .lineup-player-row .pill { grid-column: 3 / 5; grid-row: 2; justify-self: start; }
+}
