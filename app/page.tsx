@@ -9,12 +9,13 @@ type AuthMode = "signin" | "signup" | "recovery" | "confirmation";
 type Role = "administrador" | "organizador" | "comisario" | "arbitro" | "disciplina" | "club" | "publico";
 type Club = { id: string; nombre: string; sigla: string; color?: string; estadio?: string };
 type Standing = { club_id?: string; club?: string; sigla?: string; pj: number; pg: number; pe: number; pp: number; gf: number; gc: number; pts: number };
-type Match = { id: string; local_id?: string; visitante_id?: string; local?: string; visitante?: string; goles_local: number; goles_visitante: number; fecha?: string; fecha_hora?: string; jornada: number; estado: string; estadio?: string; fase?: string };
+type Match = { id: string; local_id?: string; visitante_id?: string; local?: string; visitante?: string; goles_local: number; goles_visitante: number; fecha?: string; fecha_hora?: string; jornada: number; estado: string; estadio?: string; fase?: string; periodo?: string; reloj_inicio_at?: string | null; reloj_acumulado_segundos?: number };
 type Profile = { nombre: string; apodo: string; ciudad: string; club_favorito_id: string | null; avatar_url: string | null };
 type VirtualPrediction = { id: string; partido_id: string; seleccion: "local" | "empate" | "visitante"; cuota: number; puntos_apostados: number; retorno_puntos: number; estado: "pendiente" | "ganado" | "perdido" | "anulado"; created_at: string };
 type Competition = { id: string; nombre: string; temporada: number; serie: string; estado: string };
 type Player = { id: string; club_id: string; nombre: string; dorsal: number; posicion: string; estado_comet: string };
-type EventRow = { id: string; minuto: number; tipo: string; club_id: string; jugador?: string; detalle?: string };
+type EventRow = { id: string; partido_id: string; minuto: number; tipo: string; club_id?: string; jugador?: string; detalle?: string };
+type LeaderboardRow = { posicion: number; apodo: string; puntos: number; aciertos: number; total_pronosticos: number };
 type Sanction = { id: string; jugador: string; club: string; infraccion: string; jornadas: number; estado: string; fecha?: string };
 type Bulletin = { id: string; titulo: string; categoria: string; resumen: string; publicado_at?: string };
 
@@ -111,6 +112,24 @@ function badgeText(value?: string) {
   return "Programado";
 }
 
+function elapsedMatchSeconds(match?: Match) {
+  if (!match) return 0;
+  const base = match.reloj_acumulado_segundos ?? 0;
+  if (match.estado !== "en_vivo" || !match.reloj_inicio_at) return base;
+  const startedAt = Date.parse(match.reloj_inicio_at);
+  return base + (Number.isFinite(startedAt) ? Math.max(0, Math.floor((Date.now() - startedAt) / 1000)) : 0);
+}
+
+function periodLabel(period?: string, compact = false) {
+  const labels: Record<string, [string, string]> = {
+    primer_tiempo: ["PRIMER TIEMPO", "1T"],
+    medio_tiempo: ["MEDIO TIEMPO", "MT"],
+    segundo_tiempo: ["SEGUNDO TIEMPO", "2T"],
+    final: ["FINALIZADO", "FT"],
+  };
+  return labels[period ?? ""]?.[compact ? 1 : 0] ?? (compact ? "—" : "POR INICIAR");
+}
+
 export default function Home() {
   const [view, setView] = useState<View>("torneos");
   const [supabase, setSupabase] = useState<SupabaseClient | null>(null);
@@ -119,9 +138,11 @@ export default function Home() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [virtualBalance, setVirtualBalance] = useState(1000);
   const [myPredictions, setMyPredictions] = useState<VirtualPrediction[]>([]);
+  const [leaderboard, setLeaderboard] = useState<LeaderboardRow[]>([]);
   const [clubs, setClubs] = useState<Club[]>(sampleClubs);
   const [standings, setStandings] = useState<Standing[]>(sampleStandings);
   const [matches, setMatches] = useState<Match[]>(sampleMatches);
+  const [selectedMatchId, setSelectedMatchId] = useState<string | null>(null);
   const [players, setPlayers] = useState<Player[]>([]);
   const [sanctions, setSanctions] = useState<Sanction[]>(sampleSanctions);
   const [bulletins, setBulletins] = useState<Bulletin[]>(sampleBulletins);
@@ -137,6 +158,7 @@ export default function Home() {
   const [authMessage, setAuthMessage] = useState("");
   const [search, setSearch] = useState("");
   const [loginBusy, setLoginBusy] = useState(false);
+  const [liveActionBusy, setLiveActionBusy] = useState(false);
   const [highContrast, setHighContrast] = useState(false);
   const [fontScale, setFontScale] = useState(1);
   const [utcClock, setUtcClock] = useState("");
@@ -168,15 +190,16 @@ export default function Home() {
 
   const loadData = useCallback(async (client: SupabaseClient) => {
     setLoading(true);
-    const [clubResult, compResult, matchResult, standingsResult, playerResult, sanctionResult, eventResult, bulletinResult] = await Promise.all([
+    const [clubResult, compResult, matchResult, standingsResult, playerResult, sanctionResult, eventResult, bulletinResult, rankingResult] = await Promise.all([
       client.from("clubes").select("id,nombre,sigla,color_primario,estadio").order("nombre"),
       client.from("competencias").select("id,nombre,temporada,serie,estado").order("temporada", { ascending: false }).limit(1),
-      client.from("partidos").select("id,club_local_id,club_visitante_id,goles_local,goles_visitante,jornada,estado,estadio,fecha_hora,fase:fases(nombre)").order("fecha_hora", { ascending: true }).limit(20),
+      client.from("partidos").select("id,club_local_id,club_visitante_id,goles_local,goles_visitante,jornada,estado,estadio,fecha_hora,periodo,reloj_inicio_at,reloj_acumulado_segundos,fase:fases(nombre)").order("fecha_hora", { ascending: true }).limit(20),
       client.from("clasificacion_publica").select("club_id,club,sigla,pj,pg,pe,pp,gf,gc,pts").order("posicion"),
       client.from("jugadores").select("id,club_id,nombre,dorsal,posicion,estado_comet").order("dorsal"),
       client.from("sanciones").select("id,jugador:jugadores(nombre),club:clubes(nombre),infraccion,jornadas_suspension,estado,created_at").order("created_at", { ascending: false }).limit(30),
-      client.from("incidencias").select("id,minuto,tipo,club_id,jugador:jugadores(nombre),detalle").order("created_at", { ascending: false }).limit(25),
+      client.from("incidencias").select("id,partido_id,minuto,tipo,club_id,detalle").order("created_at", { ascending: true }).limit(100),
       client.from("comunicados").select("id,titulo,categoria,resumen,publicado_at").eq("estado", "publicado").order("publicado_at", { ascending: false }).limit(12),
+      client.from("ranking_pronosticos").select("posicion,apodo,puntos,aciertos,total_pronosticos").order("posicion").limit(10),
     ]);
 
     if (clubResult.error || matchResult.error) {
@@ -198,6 +221,9 @@ export default function Home() {
         goles_visitante: row.goles_visitante ?? 0,
         jornada: row.jornada,
         estado: row.estado,
+        periodo: row.periodo,
+        reloj_inicio_at: row.reloj_inicio_at,
+        reloj_acumulado_segundos: row.reloj_acumulado_segundos ?? 0,
         estadio: row.estadio,
         fecha_hora: row.fecha_hora,
         fecha: row.fecha_hora ? new Date(row.fecha_hora).toLocaleString("es-EC", { dateStyle: "medium", timeStyle: "short" }) : "Por programar",
@@ -209,10 +235,9 @@ export default function Home() {
     if (!sanctionResult.error && sanctionResult.data?.length) {
       setSanctions(sanctionResult.data.map((row: any) => ({ id: row.id.slice(0, 8), jugador: row.jugador?.nombre ?? "Jugador", club: row.club?.nombre ?? "Club", infraccion: row.infraccion, jornadas: row.jornadas_suspension, estado: row.estado, fecha: row.created_at })));
     }
-    if (!eventResult.error && eventResult.data?.length) {
-      setEvents(eventResult.data.map((row: any) => ({ id: row.id, minuto: row.minuto, tipo: row.tipo, club_id: row.club_id, jugador: row.jugador?.nombre, detalle: row.detalle })));
-    }
+    if (!eventResult.error) setEvents((eventResult.data ?? []).map((row: any) => ({ id: row.id, partido_id: row.partido_id, minuto: row.minuto, tipo: row.tipo, club_id: row.club_id, detalle: row.detalle })).reverse());
     if (!bulletinResult.error && bulletinResult.data?.length) setBulletins(bulletinResult.data as Bulletin[]);
+    if (!rankingResult.error && rankingResult.data) setLeaderboard(rankingResult.data as LeaderboardRow[]);
     setDatabase("connected");
     setLoading(false);
   }, []);
@@ -228,39 +253,80 @@ export default function Home() {
     if (!predictionResult.error && predictionResult.data) setMyPredictions(predictionResult.data as VirtualPrediction[]);
   }, []);
 
+  const loadLeaderboard = useCallback(async (client: SupabaseClient) => {
+    const { data, error } = await client.from("ranking_pronosticos").select("posicion,apodo,puntos,aciertos,total_pronosticos").order("posicion").limit(10);
+    if (!error && data) setLeaderboard(data as LeaderboardRow[]);
+  }, []);
+
+  const syncGoogleProfile = useCallback(async (client: SupabaseClient, authUser: User) => {
+    const isGoogle = authUser.app_metadata?.provider === "google" || authUser.identities?.some((identity) => identity.provider === "google");
+    if (!isGoogle) return;
+    const metadata = authUser.user_metadata ?? {};
+    const googleName = String(metadata.full_name ?? metadata.name ?? "").trim();
+    const googleAvatar = String(metadata.avatar_url ?? metadata.picture ?? "").trim();
+    const googleNickname = String(metadata.nickname ?? metadata.preferred_username ?? googleName.split(/\s+/)[0] ?? "").trim();
+    const { data: current } = await client.from("perfiles").select("nombre,apodo,avatar_url").eq("id", authUser.id).maybeSingle();
+    if (!current) return;
+    const changes: Record<string, string> = {};
+    if (!String(current.nombre ?? "").trim() && googleName) changes.nombre = googleName;
+    if (!String(current.apodo ?? "").trim() && googleNickname) changes.apodo = googleNickname.slice(0, 30);
+    if (!current.avatar_url && googleAvatar) changes.avatar_url = googleAvatar;
+    if (Object.keys(changes).length) await client.from("perfiles").update(changes).eq("id", authUser.id);
+  }, []);
+
+  const hydrateUser = useCallback(async (client: SupabaseClient, authUser: User) => {
+    await syncGoogleProfile(client, authUser);
+    setUser(authUser);
+    const { data: currentProfile } = await client.from("perfiles").select("rol").eq("id", authUser.id).maybeSingle();
+    setRole((currentProfile?.rol as Role) ?? null);
+    await loadFanData(client, authUser.id);
+    return (currentProfile?.rol as Role) ?? null;
+  }, [loadFanData, syncGoogleProfile]);
+
   useEffect(() => {
     try {
       const client = createClient();
       setSupabase(client);
       void client.auth.getUser().then(async ({ data }) => {
-        setUser(data.user);
-        if (data.user) {
-          const { data: profile } = await client.from("perfiles").select("rol").eq("id", data.user.id).maybeSingle();
-          setRole((profile?.rol as Role) ?? null);
-          void loadFanData(client, data.user.id);
-        }
+        if (data.user) await hydrateUser(client, data.user);
+        else setUser(null);
       });
       const { data: authListener } = client.auth.onAuthStateChange((event, session) => {
         if (event === "SIGNED_OUT") {
           setUser(null); setRole(null); setProfile(null); setMyPredictions([]); setVirtualBalance(1000);
+        } else if (event === "SIGNED_IN" && session?.user) {
+          const signedInUser = session.user;
+          window.setTimeout(() => void hydrateUser(client, signedInUser), 0);
         }
       });
       void loadData(client);
+      void loadLeaderboard(client);
+      const rankingTimer = window.setInterval(() => void loadLeaderboard(client), 30000);
       const channel = client.channel("liga-pro-live-feed")
         .on("postgres_changes", { event: "*", schema: "public", table: "incidencias" }, () => void loadData(client))
         .on("postgres_changes", { event: "*", schema: "public", table: "partidos" }, () => void loadData(client))
         .subscribe();
-      return () => { void client.removeChannel(channel); authListener.subscription.unsubscribe(); };
+      return () => { window.clearInterval(rankingTimer); void client.removeChannel(channel); authListener.subscription.unsubscribe(); };
     } catch {
       setDatabase("demo");
       setLoading(false);
     }
-  }, [loadData, loadFanData]);
+  }, [loadData, loadFanData, loadLeaderboard, hydrateUser]);
+
+  useEffect(() => {
+    if (!supabase || !user) return;
+    const personalChannel = supabase.channel("pronosticos-personales-" + user.id)
+      .on("postgres_changes", { event: "*", schema: "public", table: "carteras_virtuales", filter: "usuario_id=eq." + user.id }, () => void loadFanData(supabase, user.id))
+      .on("postgres_changes", { event: "*", schema: "public", table: "pronosticos_virtuales", filter: "usuario_id=eq." + user.id }, () => void loadFanData(supabase, user.id))
+      .subscribe();
+    return () => { void supabase.removeChannel(personalChannel); };
+  }, [supabase, user, loadFanData]);
 
   const clubName = (id?: string) => clubs.find((club) => club.id === id)?.nombre ?? "Por asignar";
   const clubShort = (id?: string) => clubs.find((club) => club.id === id)?.sigla ?? "—";
   const canWrite = Boolean(user && role && role !== "publico");
-  const activeMatch = matches.find((match) => match.estado === "en_vivo") ?? matches[0];
+  const canOperateLive = Boolean(user && role && ["administrador", "comisario", "arbitro"].includes(role));
+  const activeMatch = matches.find((match) => match.id === selectedMatchId) ?? matches.find((match) => match.estado === "en_vivo") ?? matches[0];
   const currentGroup = screenGroups.find((group) => group.screens.some((screen) => screen.id === view)) ?? screenGroups[0];
   const navigateTo = (screen: View) => setView(screen);
 
@@ -272,13 +338,28 @@ export default function Home() {
     const { data, error } = await supabase.auth.signInWithPassword({ email: String(form.get("email")), password: String(form.get("password")) });
     setLoginBusy(false);
     if (error) { setAuthMessage("No se pudo iniciar sesión. Verifica el correo y la contraseña."); return; }
-    setUser(data.user);
-    const { data: profile } = await supabase.from("perfiles").select("rol").eq("id", data.user.id).maybeSingle();
-    setRole((profile?.rol as Role) ?? null);
-    void loadFanData(supabase, data.user.id);
+    const signedInRole = await hydrateUser(supabase, data.user);
     setAuthOpen(false);
     setAuthMessage("");
-    setNotice(profile?.rol ? `Sesión iniciada como ${roleLabels[profile.rol] ?? profile.rol}.` : "Sesión iniciada. El administrador debe asignar un rol a tu perfil.");
+    setNotice(signedInRole ? `Sesión iniciada como ${roleLabels[signedInRole] ?? signedInRole}.` : "Sesión iniciada. El administrador debe asignar un rol a tu perfil.");
+  }
+
+  async function signInWithGoogle() {
+    if (!supabase) return;
+    setLoginBusy(true);
+    setAuthMessage("");
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: { redirectTo: `${window.location.origin}/?view=perfil` },
+      });
+      if (!error) return;
+      setLoginBusy(false);
+      setAuthMessage("No se pudo iniciar con Google. Revisa la configuración del proveedor en Supabase.");
+    } catch {
+      setLoginBusy(false);
+      setAuthMessage("No se pudo iniciar con Google. Revisa la conexión y la configuración del proveedor.");
+    }
   }
 
   async function signUp(event: FormEvent<HTMLFormElement>) {
@@ -415,6 +496,7 @@ export default function Home() {
     const { error } = await supabase.rpc("crear_pronostico_virtual", { p_partido_id: matchId, p_seleccion: selection, p_puntos: points });
     if (error) { setNotice(`No se pudo guardar el pronóstico: ${error.message}`); return; }
     await loadFanData(supabase, user.id);
+    await loadLeaderboard(supabase);
     setNotice("Pronóstico registrado. Su saldo usa puntos virtuales sin valor monetario.");
   }
 
@@ -450,27 +532,29 @@ export default function Home() {
     setNotice("Partido programado."); void loadData(supabase); formElement.reset();
   }
 
-  async function createIncident(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  async function createLiveAction(action: string, clubId?: string, playerId?: string, secondaryPlayerId?: string, detail?: string) {
     if (!supabase || !activeMatch || !requireRole(["administrador", "comisario", "arbitro"])) return;
-    if (activeMatch.id.startsWith("demo")) { setNotice("Los partidos locales de muestra son de solo lectura. Ejecuta el esquema SQL para registrar incidencias en Supabase."); return; }
-    if (activeMatch.estado !== "en_vivo") { setNotice("Las incidencias se registran cuando el partido está en vivo."); return; }
-    const formElement = event.currentTarget;
-    const form = new FormData(event.currentTarget);
-    const kind = String(form.get("tipo"));
-    const clubId = String(form.get("club_id"));
-    const playerId = String(form.get("jugador_id") || "") || null;
-    const minute = Number(form.get("minuto"));
-    const details = String(form.get("detalle") || "");
-    const { error } = await supabase.from("incidencias").insert({ partido_id: activeMatch.id, club_id: clubId, jugador_id: playerId, minuto: minute, tipo: kind, detalle: details });
-    if (error) { setNotice(`No se pudo registrar la incidencia: ${error.message}`); return; }
-    if (kind === "gol") {
-      const field = clubId === activeMatch.local_id ? "goles_local" : "goles_visitante";
-      const score = clubId === activeMatch.local_id ? activeMatch.goles_local : activeMatch.goles_visitante;
-      const { error: scoreError } = await supabase.from("partidos").update({ [field]: score + 1 }).eq("id", activeMatch.id);
-      if (scoreError) setNotice(`Incidencia guardada; el marcador no se actualizó: ${scoreError.message}`);
+    if (activeMatch.id.startsWith("demo")) { setNotice("El marcador de muestra es de solo lectura. Ejecuta la migración de Supabase y selecciona un partido real."); return; }
+    setLiveActionBusy(true);
+    try {
+      const { error } = await supabase.rpc("registrar_evento_en_vivo", {
+        p_partido_id: activeMatch.id,
+        p_accion: action,
+        p_club_id: clubId || null,
+        p_jugador_id: playerId || null,
+        p_jugador_secundario_id: secondaryPlayerId || null,
+        p_detalle: detail?.trim() ?? "",
+      });
+      if (error) { setNotice(`No se pudo registrar la acción: ${error.message}`); return; }
+      setNotice(action === "final" ? "Partido finalizado; los pronósticos se liquidaron en Supabase." : "Acción registrada. El marcador y la cronología se actualizaron en vivo.");
+      await loadData(supabase);
+      if (user) await loadFanData(supabase, user.id);
+      await loadLeaderboard(supabase);
+    } catch {
+      setNotice("No se pudo conectar con Supabase. Vuelve a intentarlo cuando la conexión esté disponible.");
+    } finally {
+      setLiveActionBusy(false);
     }
-    setNotice("Incidencia registrada en el acta."); void loadData(supabase); formElement.reset();
   }
 
   async function createSanction(event: FormEvent<HTMLFormElement>) {
@@ -508,7 +592,7 @@ export default function Home() {
             <strong>{clubShort(activeMatch?.local_id)}</strong>
             <span className="topbar-score">{activeMatch?.goles_local ?? 0} - {activeMatch?.goles_visitante ?? 0}</span>
             <strong>{clubShort(activeMatch?.visitante_id)}</strong>
-            <span className="topbar-minute">{activeMatch?.estado === "en_vivo" ? "68′ 2T" : "UTC−5"}</span>
+            <span className="topbar-minute">{activeMatch?.estado === "en_vivo" ? `${Math.floor(elapsedMatchSeconds(activeMatch) / 60)}′ ${periodLabel(activeMatch.periodo, true)}` : activeMatch?.estado === "finalizado" ? "FT" : "UTC−5"}</span>
           </button>
           <div className="topbar-user">
             <div className="topbar-clock"><span>UTC−5</span><time>{utcClock || "--:--:--"}</time></div>
@@ -534,7 +618,7 @@ export default function Home() {
           {database === "demo" && <div className="demo-banner"><span>ⓘ</span><div><strong>Vista de demostración</strong><span>Los datos visibles son ilustrativos. Conecta Supabase y ejecuta <code>supabase/schema.sql</code> para habilitar datos reales y guardar cambios.</span></div></div>}
 
           {view === "portal" && <Portal clubs={clubs} standings={standings} matches={matches} bulletins={bulletins} clubName={clubName} clubShort={clubShort} loading={loading} onView={navigateTo} />}
-          {view === "pronosticos" && <PredictionsPage matches={matches} clubName={clubName} balance={virtualBalance} isLoggedIn={Boolean(user)} profileComplete={Boolean(profile?.nombre.trim() && profile?.apodo.trim())} databaseConnected={database === "connected"} onLogin={() => { setAuthMode("signup"); setAuthOpen(true); }} onPlace={createVirtualPrediction} onView={navigateTo} />}
+          {view === "pronosticos" && <PredictionsPage matches={matches} clubName={clubName} balance={virtualBalance} leaderboard={leaderboard} isLoggedIn={Boolean(user)} profileComplete={Boolean(profile?.nombre.trim() && profile?.apodo.trim())} databaseConnected={database === "connected"} onLogin={() => { setAuthMode("signup"); setAuthOpen(true); }} onPlace={createVirtualPrediction} onView={navigateTo} />}
           {view === "misPronosticos" && <MyPredictionsPage predictions={myPredictions} matches={matches} clubName={clubName} isLoggedIn={Boolean(user)} onLogin={() => { setAuthMode("signin"); setAuthOpen(true); }} onView={navigateTo} />}
           {view === "perfil" && <ProfilePage user={user} profile={profile} clubs={clubs} balance={virtualBalance} predictionCount={myPredictions.length} onSave={saveProfile} onUploadAvatar={uploadAvatar} onChangePassword={changePassword} passwordBusy={loginBusy} onSignIn={() => { setAuthMode("signin"); setAuthMessage(""); setAuthOpen(true); }} onSignUp={() => { setAuthMode("signup"); setAuthMessage(""); setAuthOpen(true); }} onRecover={() => { setAuthEmail(user?.email ?? authEmail); setAuthMode("recovery"); setAuthMessage(""); setAuthOpen(true); }} onSignOut={() => void signOut()} onView={navigateTo} />}
           {view === "tabla" && <PublicTablePage clubs={clubs} standings={standings} clubName={clubName} onView={navigateTo} />}
@@ -556,7 +640,7 @@ export default function Home() {
           {view === "planilla" && <LineupPanel clubs={clubs} players={players} matches={matches} clubName={clubName} clubShort={clubShort} canWrite={canWrite} onLogin={() => setAuthOpen(true)} onNotice={setNotice} />}
           {view === "jugador" && <PlayerEligibilityPage clubs={clubs} players={players} onView={navigateTo} />}
           {view === "acta" && <ActaPage match={activeMatch} clubName={clubName} onNotice={setNotice} />}
-          {view === "vivo" && <LivePanel clubs={clubs} match={activeMatch} events={events} players={players} clubName={clubName} clubShort={clubShort} canWrite={canWrite} onLogin={() => setAuthOpen(true)} onCreateIncident={createIncident} />}
+          {view === "vivo" && <LivePanel clubs={clubs} matches={matches} match={activeMatch} events={events.filter((event) => event.partido_id === activeMatch?.id)} players={players} clubName={clubName} clubShort={clubShort} canWrite={canOperateLive} actionBusy={liveActionBusy} onLogin={() => setAuthOpen(true)} onSelectMatch={setSelectedMatchId} onCreateAction={createLiveAction} />}
           {view === "incidencias" && <IncidentRegisterPage events={events} clubShort={clubShort} onView={navigateTo} />}
           {view === "var" && <VarIntegrityPage events={events} clubShort={clubShort} onView={navigateTo} />}
           {view === "disciplina" && <DisciplinePanel clubs={clubs} players={players} sanctions={filteredSanctions} search={search} setSearch={setSearch} canWrite={canWrite} onLogin={() => setAuthOpen(true)} onCreateSanction={createSanction} />}
@@ -590,6 +674,7 @@ export default function Home() {
           {(authMode === "signin" || authMode === "signup") && <button className="auth-switch" type="button" onClick={() => { setAuthMode(authMode === "signin" ? "signup" : "signin"); setAuthMessage(""); }}>
             {authMode === "signin" ? "¿No tienes cuenta? Crear cuenta" : "¿Ya tienes cuenta? Iniciar sesión"}
           </button>}
+          {(authMode === "signin" || authMode === "signup") && <><div className="oauth-divider"><span>o</span></div><button className="oauth-button" type="button" disabled={loginBusy} onClick={() => void signInWithGoogle()}><span className="google-g" aria-hidden="true">G</span>{loginBusy ? "Conectando…" : "Continuar con Google"}</button></>}
           {authMode === "recovery" && <button className="auth-switch" type="button" onClick={() => { setAuthMode("signin"); setAuthMessage(""); }}>Volver a iniciar sesión</button>}
           {(authMode === "signin" || authMode === "signup") && <p className="auth-footnote">Las cuentas nuevas tienen rol público. Los pronósticos usan únicamente puntos virtuales sin depósitos ni retiros.</p>}
         </section>
@@ -598,7 +683,7 @@ export default function Home() {
   );
 }
 
-function PredictionsPage({ matches, clubName, balance, isLoggedIn, profileComplete, databaseConnected, onLogin, onPlace, onView }: { matches: Match[]; clubName: (id?: string) => string; balance: number; isLoggedIn: boolean; profileComplete: boolean; databaseConnected: boolean; onLogin: () => void; onPlace: (matchId: string, selection: "local" | "empate" | "visitante", points: number) => void; onView: (view: View) => void }) {
+function PredictionsPage({ matches, clubName, balance, leaderboard, isLoggedIn, profileComplete, databaseConnected, onLogin, onPlace, onView }: { matches: Match[]; clubName: (id?: string) => string; balance: number; leaderboard: LeaderboardRow[]; isLoggedIn: boolean; profileComplete: boolean; databaseConnected: boolean; onLogin: () => void; onPlace: (matchId: string, selection: "local" | "empate" | "visitante", points: number) => void; onView: (view: View) => void }) {
   const games = matches.filter((match) => match.estado === "programado");
   const openGames = games.filter((match) => Boolean(match.fecha_hora && new Date(match.fecha_hora).getTime() > Date.now()));
   return <>
@@ -610,6 +695,7 @@ function PredictionsPage({ matches, clubName, balance, isLoggedIn, profileComple
     {databaseConnected && games.length > 0 && openGames.length === 0 && <div className="risk-note eligibility-note"><span>◷</span><p>Los partidos programados disponibles pertenecen a fechas pasadas. El organizador debe publicar próximos encuentros para habilitar nuevos pronósticos.</p><button className="text-link" onClick={() => onView("calendario")}>Revisar calendario →</button></div>}
     <div className="prediction-section-title"><div><p className="eyebrow">MERCADO 1X2</p><h2>¿Quién gana?</h2></div><span className="pill">Local · Empate · Visitante</span></div>
     {games.length ? <div className="prediction-list">{games.map((match) => <PredictionCard key={match.id} match={match} clubName={clubName} balance={balance} canPredict={isLoggedIn && profileComplete && databaseConnected && Boolean(match.fecha_hora && new Date(match.fecha_hora).getTime() > Date.now())} onLogin={onLogin} onPlace={onPlace} />)}</div> : <section className="panel empty-state"><span>◷</span><strong>Aún no hay partidos programados</strong><p>Cuando el organizador publique próximos encuentros, aquí aparecerán las opciones de pronóstico.</p></section>}
+    <section className="panel leaderboard-panel"><div className="panel-heading"><div><p className="eyebrow">COMUNIDAD · PUNTOS VIRTUALES</p><h2>Ranking de pronósticos</h2></div><span className="pill">Actualiza cada 30 s</span></div>{leaderboard.length ? <ol className="ranking-list">{leaderboard.map((row) => <li key={`${row.posicion}-${row.apodo}`}><span className="ranking-position">{row.posicion}</span><span className="ranking-name">{row.apodo}</span><span className="ranking-record">{row.aciertos}/{row.total_pronosticos} aciertos</span><strong>{row.puntos.toLocaleString("es-EC")} pts</strong></li>)}</ol> : <div className="empty-state compact"><strong>El ranking se mostrará al aplicar la migración de pronósticos</strong><p>Solo publica apodos y puntos virtuales; nunca correos ni nombres de cuenta.</p></div>}</section>
   </>;
 }
 
@@ -760,25 +846,73 @@ function LineupPanel({ clubs, players, matches, clubName, clubShort, canWrite, o
   </>;
 }
 
-function LivePanel({ clubs, match, events, players, clubName, clubShort, canWrite, onLogin, onCreateIncident }: { clubs: Club[]; match?: Match; events: EventRow[]; players: Player[]; clubName: (id?: string) => string; clubShort: (id?: string) => string; canWrite: boolean; onLogin: () => void; onCreateIncident: (event: FormEvent<HTMLFormElement>) => void }) {
-  const [running, setRunning] = useState(false);
-  const [seconds, setSeconds] = useState(7 * 60 + 42);
-  const [eventKind, setEventKind] = useState("gol");
+function LivePanel({ clubs, matches, match, events, players, clubName, clubShort, canWrite, actionBusy, onLogin, onSelectMatch, onCreateAction }: { clubs: Club[]; matches: Match[]; match?: Match; events: EventRow[]; players: Player[]; clubName: (id?: string) => string; clubShort: (id?: string) => string; canWrite: boolean; actionBusy: boolean; onLogin: () => void; onSelectMatch: (matchId: string) => void; onCreateAction: (action: string, clubId?: string, playerId?: string, secondaryPlayerId?: string, detail?: string) => void }) {
+  const [clubId, setClubId] = useState(match?.local_id ?? "");
+  const [playerId, setPlayerId] = useState("");
+  const [playerOutId, setPlayerOutId] = useState("");
+  const [playerInId, setPlayerInId] = useState("");
+  const [detail, setDetail] = useState("");
   const homeRoster = players.filter((player) => player.club_id === match?.local_id);
   const awayRoster = players.filter((player) => player.club_id === match?.visitante_id);
+  const teamRoster = players.filter((player) => player.club_id === clubId);
+  const seconds = elapsedMatchSeconds(match);
+  const clock = String(Math.floor(seconds / 60)).padStart(2, "0") + ":" + String(seconds % 60).padStart(2, "0");
+  const minute = Math.floor(seconds / 60);
+  const isLive = match?.estado === "en_vivo";
+  const canRecordMatchEvent = isLive && ["primer_tiempo", "segundo_tiempo"].includes(match?.periodo ?? "");
+
   useEffect(() => {
-    if (!running) return;
-    const timer = window.setInterval(() => setSeconds((value) => value + 1), 1000);
-    return () => window.clearInterval(timer);
-  }, [running]);
-  const clock = `${String(Math.floor(seconds / 60)).padStart(2, "0")}:${String(seconds % 60).padStart(2, "0")}`;
+    setClubId(match?.local_id ?? "");
+    setPlayerId("");
+    setPlayerOutId("");
+    setPlayerInId("");
+  }, [match?.id, match?.local_id]);
+
+  function submitAction(action: string) {
+    let player = "";
+    let secondPlayer = "";
+    let eventDetail = detail.trim();
+    if (["gol", "amarilla", "roja", "sustitucion"].includes(action) && !clubId) return;
+    if (action === "sustitucion") {
+      if (!playerOutId || !playerInId || playerOutId === playerInId) return;
+      const outgoing = players.find((item) => item.id === playerOutId);
+      const incoming = players.find((item) => item.id === playerInId);
+      player = playerOutId;
+      secondPlayer = playerInId;
+      eventDetail = "Sale " + (outgoing?.nombre ?? "jugador") + "; entra " + (incoming?.nombre ?? "jugador") + (eventDetail ? " · " + eventDetail : "");
+    } else if (playerId) {
+      player = playerId;
+      const scorer = players.find((item) => item.id === playerId);
+      eventDetail = (scorer?.nombre ? scorer.nombre + (eventDetail ? " · " : "") : "") + eventDetail;
+    }
+    onCreateAction(action, clubId || undefined, player || undefined, secondPlayer || undefined, eventDetail);
+    if (action !== "iniciar" && action !== "medio_tiempo" && action !== "inicio_segundo_tiempo" && action !== "final") setDetail("");
+  }
+
   return <>
-    <PageHeading eyebrow="PAN-004 · CONSOLA DE REGISTRO EN VIVO" title="Consola de arbitraje y comisaría" subtitle="Registra goles, tarjetas y cambios en la cronología del acta oficial."><span className="live-connect"><i /> ACTA DIGITAL</span><button className="btn btn-light" onClick={() => setRunning(!running)}>{running ? "Ⅱ Pausar reloj" : "▶ Iniciar reloj"}</button></PageHeading>
-    {!canWrite && <div className="permission-banner"><span>◉</span><div><strong>Consola en modo consulta</strong><p>El registro de incidencias exige un perfil de árbitro, comisario u administrador.</p></div><button className="btn btn-dark" onClick={onLogin}>Ingresar</button></div>}
-    <section className="live-scoreboard"><div className="score-side"><ClubMark club={clubs.find((club) => club.id === match?.local_id)} /><div><span className="eyebrow gold-text">LOCAL · SERIE A</span><h2>{clubName(match?.local_id)}</h2></div></div><div className="score-center"><div className="period"><span className="live-dot" /> SEGUNDO TIEMPO</div><div className="score"><strong>{match?.goles_local ?? 0}</strong><span>{clock}</span><strong>{match?.goles_visitante ?? 0}</strong></div><span className="muted">{match ? badgeText(match.estado).toUpperCase() : "SIN PARTIDO ACTIVO"}</span></div><div className="score-side away"><div><span className="eyebrow gold-text">VISITANTE · SERIE A</span><h2>{clubName(match?.visitante_id)}</h2></div><ClubMark club={clubs.find((club) => club.id === match?.visitante_id)} /></div></section>
-    <div className="metrics-grid four"><Metric label="VENTANAS · LOCAL" value="2" suffix=" / 3" note="Sustituciones registradas" icon="↔" /><Metric label="VENTANAS · VISITANTE" value="1" suffix=" / 3" note="Sustituciones registradas" icon="↔" /><Metric label="JUGADORES HABILITADOS" value={`${homeRoster.length + awayRoster.length}`} note="Nóminas cargadas" icon="✓" /><Metric label="EVENTOS REGISTRADOS" value={`${events.length}`} note="Cronología del acta" icon="☷" /></div>
-    <section className="panel tactical-panel"><div className="panel-heading"><div><p className="eyebrow">UN TOQUE PARA REGISTRAR</p><h2>Botonera de acción táctica</h2></div><span className="muted">Equipo activo: {clubShort(match?.local_id)} (local)</span></div><form className="incident-form" onSubmit={onCreateIncident}><input type="hidden" name="tipo" value={eventKind}/><label>Equipo<select name="club_id" required defaultValue={match?.local_id}><option value={match?.local_id}>{clubName(match?.local_id)} · Local</option><option value={match?.visitante_id}>{clubName(match?.visitante_id)} · Visitante</option></select></label><label>Jugador<select name="jugador_id"><option value="">Sin jugador asociado</option>{players.map((player) => <option key={player.id} value={player.id}>{player.dorsal} · {player.nombre}</option>)}</select></label><label>Minuto<input name="minuto" type="number" min="0" max="130" defaultValue={Math.floor(seconds / 60)} required /></label><label className="incident-detail">Detalle<input name="detalle" placeholder="Observación para el acta (opcional)" /></label><div className="incident-actions">{[["gol", "⚽", "Gol"], ["sustitucion", "↔", "Sustitución"], ["amarilla", "▰", "Amarilla"], ["roja", "▰", "Expulsión"], ["var", "▣", "Revisión VAR"], ["observacion", "✎", "Observación"]].map(([value, icon, label]) => <button className={`incident-button incident-${value}`} key={value} type="submit" onClick={() => setEventKind(value)}><span>{icon}</span><strong>{label}</strong></button>)}</div></form></section>
-    <div className="live-columns"><section className="panel timeline-panel"><div className="panel-heading"><div><p className="eyebrow">CRONOLOGÍA MINUTO A MINUTO</p><h2>Línea de tiempo reglamentaria</h2></div><span className="pill pill-live">ACTA ACTIVA</span></div>{events.length ? <div className="timeline">{events.map((event) => <article className="timeline-item" key={event.id}><span className="timeline-minute">{event.minuto}′</span><div><strong>{event.tipo.replaceAll("_", " ").toUpperCase()} · {clubShort(event.club_id)}</strong><p>{event.jugador ? `${event.jugador} · ` : ""}{event.detalle || "Incidencia registrada en el partido."}</p></div></article>)}</div> : <div className="empty-state"><span>◷</span><strong>Aún no hay incidencias</strong><p>Las acciones registradas aparecerán aquí en tiempo real.</p></div>}</section><aside className="panel roster-live"><div className="panel-heading"><div><p className="eyebrow">PARTIDO ACTIVO</p><h2>Alineación</h2></div><span className="pill">{players.length} jugadores</span></div>{[...homeRoster.slice(0, 5), ...awayRoster.slice(0, 5)].length ? [...homeRoster.slice(0, 5), ...awayRoster.slice(0, 5)].map((player) => <div className="roster-mini" key={player.id}><span className="jersey">{player.dorsal}</span><strong>{player.nombre}</strong><span className="state-ok">{player.estado_comet}</span></div>) : <div className="empty-state"><p>La alineación aparecerá cuando se carguen las plantillas.</p></div>}<div className="official-integrity"><strong>Integridad del acta</strong><span><i /> Registro protegido por Supabase RLS</span></div></aside></div>
+    <PageHeading eyebrow="PAN-004 · CONSOLA DE REGISTRO EN VIVO" title="Consola de arbitraje y comisaría" subtitle="El marcador, el reloj y los eventos se sincronizan desde Supabase para todos los espectadores."><span className="live-connect"><i /> {isLive ? "SINCRONIZADO EN VIVO" : "ACTA DIGITAL"}</span></PageHeading>
+    {!canWrite && <div className="permission-banner"><span>◉</span><div><strong>Consola en modo consulta</strong><p>El registro exige un usuario con rol de árbitro, comisario o administrador.</p></div><button className="btn btn-dark" onClick={onLogin}>Ingresar</button></div>}
+    <div className="live-match-picker"><label>Partido<select value={match?.id ?? ""} onChange={(event) => onSelectMatch(event.target.value)}>{matches.map((item) => <option key={item.id} value={item.id}>{clubShort(item.local_id)} vs {clubShort(item.visitante_id)} · {badgeText(item.estado)}{item.fecha ? " · " + item.fecha : ""}</option>)}</select></label><span className="muted">Marcador conectado a Supabase Realtime</span></div>
+    <section className="live-scoreboard"><div className="score-side"><ClubMark club={clubs.find((club) => club.id === match?.local_id)} /><div><span className="eyebrow gold-text">LOCAL · SERIE A</span><h2>{clubName(match?.local_id)}</h2></div></div><div className="score-center"><div className="period">{isLive && <span className="live-dot" />} {periodLabel(match?.periodo)}</div><div className="score"><strong>{match?.goles_local ?? 0}</strong><span>{clock}</span><strong>{match?.goles_visitante ?? 0}</strong></div><span className="muted">{match ? badgeText(match.estado).toUpperCase() : "SIN PARTIDO ACTIVO"}</span></div><div className="score-side away"><div><span className="eyebrow gold-text">VISITANTE · SERIE A</span><h2>{clubName(match?.visitante_id)}</h2></div><ClubMark club={clubs.find((club) => club.id === match?.visitante_id)} /></div></section>
+    <div className="metrics-grid four"><Metric label="MINUTO OFICIAL" value={isLive ? String(minute) : "—"} suffix={isLive ? "′" : ""} note={isLive ? periodLabel(match?.periodo) : "El reloj se inicia desde el panel arbitral"} icon="◷" /><Metric label="ESTADO DEL PARTIDO" value={match ? badgeText(match.estado) : "Sin partido"} note={match?.fecha ?? "Selecciona un encuentro programado"} icon="◉" /><Metric label="JUGADORES CARGADOS" value={String(homeRoster.length + awayRoster.length)} note="Nóminas disponibles" icon="✓" /><Metric label="EVENTOS DEL ACTA" value={String(events.length)} note="Compartidos en tiempo real" icon="☷" /></div>
+    {canWrite && <section className="panel tactical-panel"><div className="panel-heading"><div><p className="eyebrow">PANEL DEL OPERADOR</p><h2>Acciones rápidas del partido</h2></div><span className="muted">{match ? clubShort(match.local_id) + " vs " + clubShort(match.visitante_id) : "Sin encuentro"}</span></div>
+      {!match && <div className="empty-state compact"><strong>Selecciona o programa un partido para activar el acta.</strong></div>}
+      {match?.estado === "programado" && <div className="operator-start"><p>Al iniciar el encuentro, los pronósticos se cierran en el servidor y el reloj compartido comienza.</p><button className="btn btn-gold" type="button" disabled={actionBusy} onClick={() => submitAction("iniciar")}>{actionBusy ? "Guardando…" : "▶ Iniciar partido"}</button></div>}
+      {isLive && <div className="incident-form">
+        <label>Equipo<select value={clubId} onChange={(event) => { setClubId(event.target.value); setPlayerId(""); setPlayerOutId(""); setPlayerInId(""); }}><option value={match?.local_id}>{clubName(match?.local_id)} · Local</option><option value={match?.visitante_id}>{clubName(match?.visitante_id)} · Visitante</option></select></label>
+        <label>Jugador<select value={playerId} onChange={(event) => setPlayerId(event.target.value)}><option value="">Sin jugador</option>{teamRoster.map((player) => <option key={player.id} value={player.id}>{player.dorsal} · {player.nombre}</option>)}</select></label>
+        <label className="incident-detail">Detalle opcional<input value={detail} onChange={(event) => setDetail(event.target.value)} maxLength={240} placeholder="Observación breve para el acta" /></label>
+        {canRecordMatchEvent && <div className="incident-actions">{[["gol", "⚽", "Gol"], ["amarilla", "▰", "Amarilla"], ["roja", "▰", "Roja"]].map(([action, icon, label]) => <button className={"incident-button incident-" + action} key={action} type="button" disabled={actionBusy} onClick={() => submitAction(action)}><span>{icon}</span><strong>{label}</strong></button>)}
+          <button className="incident-button incident-sustitucion" type="button" disabled={actionBusy} onClick={() => submitAction("sustitucion")}><span>↔</span><strong>Cambio</strong></button>
+          <button className="incident-button" type="button" disabled={actionBusy || match.periodo !== "primer_tiempo"} onClick={() => submitAction("medio_tiempo")}><span>Ⅱ</span><strong>Medio tiempo</strong></button>
+          <button className="incident-button" type="button" disabled={actionBusy || match.periodo !== "medio_tiempo"} onClick={() => submitAction("inicio_segundo_tiempo")}><span>▶</span><strong>Iniciar 2T</strong></button>
+          <button className="incident-button incident-roja" type="button" disabled={actionBusy} onClick={() => submitAction("final")}><span>■</span><strong>Final</strong></button>
+        </div>}
+        {canRecordMatchEvent && <div className="substitution-fields"><label>Sale<select value={playerOutId} onChange={(event) => setPlayerOutId(event.target.value)}><option value="">Seleccionar jugador</option>{teamRoster.map((player) => <option key={player.id} value={player.id}>{player.dorsal} · {player.nombre}</option>)}</select></label><label>Entra<select value={playerInId} onChange={(event) => setPlayerInId(event.target.value)}><option value="">Seleccionar jugador</option>{teamRoster.map((player) => <option key={player.id} value={player.id}>{player.dorsal} · {player.nombre}</option>)}</select></label><span className="muted">El cambio registra a ambos jugadores en el acta.</span></div>}
+      </div>}
+      {match?.estado === "finalizado" && <div className="operator-start"><strong>Partido finalizado.</strong><span className="muted">Los pronósticos fueron liquidados automáticamente al cerrar el acta.</span></div>}
+    </section>}
+    <div className="live-columns"><section className="panel timeline-panel"><div className="panel-heading"><div><p className="eyebrow">CRONOLOGÍA MINUTO A MINUTO</p><h2>Línea de tiempo reglamentaria</h2></div><span className="pill pill-live">{events.length} eventos</span></div>{events.length ? <div className="timeline">{events.map((event) => <article className="timeline-item" key={event.id}><span className="timeline-minute">{event.minuto}′</span><div><strong>{event.tipo.replaceAll("_", " ").toUpperCase()}{event.club_id ? " · " + clubShort(event.club_id) : ""}</strong><p>{event.detalle || "Incidencia registrada en el partido."}</p></div></article>)}</div> : <div className="empty-state"><span>◷</span><strong>Aún no hay incidencias</strong><p>Las acciones registradas aparecerán aquí para todos los espectadores.</p></div>}</section><aside className="panel roster-live"><div className="panel-heading"><div><p className="eyebrow">PARTIDO ACTIVO</p><h2>Alineación</h2></div><span className="pill">{homeRoster.length + awayRoster.length} jugadores</span></div>{[...homeRoster.slice(0, 5), ...awayRoster.slice(0, 5)].length ? [...homeRoster.slice(0, 5), ...awayRoster.slice(0, 5)].map((player) => <div className="roster-mini" key={player.id}><span className="jersey">{player.dorsal}</span><strong>{player.nombre}</strong><span className="state-ok">{player.estado_comet}</span></div>) : <div className="empty-state"><p>La alineación aparecerá cuando se carguen las plantillas.</p></div>}<div className="official-integrity"><strong>Integridad del acta</strong><span><i /> Eventos autorizados por Supabase RLS</span></div></aside></div>
   </>;
 }
 
