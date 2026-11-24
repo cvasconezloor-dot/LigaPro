@@ -549,6 +549,7 @@ on conflict (id) do nothing;
 alter table public.perfiles add column if not exists apodo text not null default '';
 alter table public.perfiles add column if not exists ciudad text not null default '';
 alter table public.perfiles add column if not exists club_favorito_id uuid;
+alter table public.perfiles add column if not exists avatar_url text;
 do $$ begin
   if not exists (select 1 from pg_constraint where conname = 'perfiles_club_favorito_fk') then
     alter table public.perfiles add constraint perfiles_club_favorito_fk foreign key (club_favorito_id) references public.clubes(id) on delete set null;
@@ -600,8 +601,31 @@ create policy perfiles_update_self_profile_fields on public.perfiles for update 
   with check (id = (select auth.uid()) or private.tiene_rol(array['administrador']::public.rol_usuario[]));
 revoke update on public.perfiles from authenticated;
 grant update (nombre, apodo, ciudad, club_favorito_id) on public.perfiles to authenticated;
+grant update (avatar_url) on public.perfiles to authenticated;
 revoke all on public.carteras_virtuales, public.pronosticos_virtuales from anon, authenticated;
 grant select on public.carteras_virtuales, public.pronosticos_virtuales to authenticated;
+
+-- Fotos de perfil públicas; la escritura queda limitada a la carpeta del usuario.
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values ('avatars', 'avatars', true, 2097152, array['image/jpeg', 'image/png', 'image/webp'])
+on conflict (id) do update set
+  public = excluded.public,
+  file_size_limit = excluded.file_size_limit,
+  allowed_mime_types = excluded.allowed_mime_types;
+
+drop policy if exists avatars_select_own on storage.objects;
+create policy avatars_select_own on storage.objects for select to authenticated
+  using (bucket_id = 'avatars' and (storage.foldername(name))[1] = (select auth.uid())::text);
+drop policy if exists avatars_insert_own on storage.objects;
+create policy avatars_insert_own on storage.objects for insert to authenticated
+  with check (bucket_id = 'avatars' and (storage.foldername(name))[1] = (select auth.uid())::text);
+drop policy if exists avatars_update_own on storage.objects;
+create policy avatars_update_own on storage.objects for update to authenticated
+  using (bucket_id = 'avatars' and (storage.foldername(name))[1] = (select auth.uid())::text)
+  with check (bucket_id = 'avatars' and (storage.foldername(name))[1] = (select auth.uid())::text);
+drop policy if exists avatars_delete_own on storage.objects;
+create policy avatars_delete_own on storage.objects for delete to authenticated
+  using (bucket_id = 'avatars' and (storage.foldername(name))[1] = (select auth.uid())::text);
 
 create schema if not exists private;
 revoke all on schema private from public, anon, authenticated, service_role;

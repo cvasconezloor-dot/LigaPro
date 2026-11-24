@@ -1,16 +1,16 @@
 "use client";
 
-import { FormEvent, useCallback, useEffect, useState } from "react";
+import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import { createClient } from "@/utils/supabase/client";
 import type { SupabaseClient, User } from "@supabase/supabase-js";
 
 type View = "portal" | "tabla" | "calendario" | "partido" | "clubes" | "club" | "estadisticas" | "boletines" | "torneos" | "temporadas" | "competencia" | "fases" | "clubesAdmin" | "clubAdmin" | "programacion" | "designaciones" | "planillas" | "planilla" | "jugador" | "acta" | "vivo" | "incidencias" | "var" | "disciplina" | "alertas" | "sanciones" | "resolucion" | "pronosticos" | "misPronosticos" | "perfil";
-type AuthMode = "signin" | "signup" | "recovery" | "update-password";
+type AuthMode = "signin" | "signup" | "recovery" | "confirmation";
 type Role = "administrador" | "organizador" | "comisario" | "arbitro" | "disciplina" | "club" | "publico";
 type Club = { id: string; nombre: string; sigla: string; color?: string; estadio?: string };
 type Standing = { club_id?: string; club?: string; sigla?: string; pj: number; pg: number; pe: number; pp: number; gf: number; gc: number; pts: number };
 type Match = { id: string; local_id?: string; visitante_id?: string; local?: string; visitante?: string; goles_local: number; goles_visitante: number; fecha?: string; fecha_hora?: string; jornada: number; estado: string; estadio?: string; fase?: string };
-type Profile = { nombre: string; apodo: string; ciudad: string; club_favorito_id: string | null };
+type Profile = { nombre: string; apodo: string; ciudad: string; club_favorito_id: string | null; avatar_url: string | null };
 type VirtualPrediction = { id: string; partido_id: string; seleccion: "local" | "empate" | "visitante"; cuota: number; puntos_apostados: number; retorno_puntos: number; estado: "pendiente" | "ganado" | "perdido" | "anulado"; created_at: string };
 type Competition = { id: string; nombre: string; temporada: number; serie: string; estado: string };
 type Player = { id: string; club_id: string; nombre: string; dorsal: number; posicion: string; estado_comet: string };
@@ -219,7 +219,7 @@ export default function Home() {
 
   const loadFanData = useCallback(async (client: SupabaseClient, userId: string) => {
     const [profileResult, walletResult, predictionResult] = await Promise.all([
-      client.from("perfiles").select("nombre,apodo,ciudad,club_favorito_id").eq("id", userId).maybeSingle(),
+      client.from("perfiles").select("nombre,apodo,ciudad,club_favorito_id,avatar_url").eq("id", userId).maybeSingle(),
       client.from("carteras_virtuales").select("saldo_puntos").eq("usuario_id", userId).maybeSingle(),
       client.from("pronosticos_virtuales").select("id,partido_id,seleccion,cuota,puntos_apostados,retorno_puntos,estado,created_at").eq("usuario_id", userId).order("created_at", { ascending: false }).limit(50),
     ]);
@@ -241,13 +241,7 @@ export default function Home() {
         }
       });
       const { data: authListener } = client.auth.onAuthStateChange((event, session) => {
-        if (event === "PASSWORD_RECOVERY") {
-          setUser(session?.user ?? null);
-          setAuthMode("update-password");
-          setAuthMessage("");
-          setAuthOpen(true);
-          setView("perfil");
-        } else if (event === "SIGNED_OUT") {
+        if (event === "SIGNED_OUT") {
           setUser(null); setRole(null); setProfile(null); setMyPredictions([]); setVirtualBalance(1000);
         }
       });
@@ -283,6 +277,7 @@ export default function Home() {
     setRole((profile?.rol as Role) ?? null);
     void loadFanData(supabase, data.user.id);
     setAuthOpen(false);
+    setAuthMessage("");
     setNotice(profile?.rol ? `Sesión iniciada como ${roleLabels[profile.rol] ?? profile.rol}.` : "Sesión iniciada. El administrador debe asignar un rol a tu perfil.");
   }
 
@@ -302,7 +297,7 @@ export default function Home() {
       password,
       options: {
         data: { full_name: String(form.get("full_name")).trim(), nickname: String(form.get("nickname")).trim(), city: String(form.get("city") ?? "").trim() },
-        emailRedirectTo: window.location.origin,
+        emailRedirectTo: `${window.location.origin}/?view=perfil`,
       },
     });
     setLoginBusy(false);
@@ -311,15 +306,17 @@ export default function Home() {
       return;
     }
 
-    setAuthOpen(false);
     if (data.session && data.user) {
+      setAuthOpen(false);
       setUser(data.user);
       const { data: profile } = await supabase.from("perfiles").select("rol").eq("id", data.user.id).maybeSingle();
       setRole((profile?.rol as Role) ?? "publico");
       void loadFanData(supabase, data.user.id);
       setNotice("Cuenta creada. Tu rol inicial es público; el administrador puede habilitar módulos institucionales.");
     } else {
-      setNotice("Cuenta creada. Revisa tu correo para confirmar el registro. Tu rol inicial será público.");
+      setAuthEmail(String(form.get("email")).trim());
+      setAuthMode("confirmation");
+      setAuthMessage("Revisa tu correo para confirmar tu cuenta. Después podrás iniciar sesión.");
     }
   }
 
@@ -330,30 +327,40 @@ export default function Home() {
     const email = String(form.get("email")).trim();
     setLoginBusy(true);
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/?view=perfil&auth=recovery`,
+      redirectTo: `${window.location.origin}/restablecer`,
     });
     setLoginBusy(false);
-    if (error) { setAuthMessage("No se pudo enviar el enlace. Comprueba el correo e inténtalo otra vez."); return; }
+    if (error) { setAuthMessage("Si el correo está registrado, recibirás un enlace para restablecer tu contraseña."); return; }
     setAuthMessage("Si existe una cuenta con ese correo, recibirás un enlace para restablecer la contraseña.");
   }
 
-  async function updatePassword(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (!supabase) return;
-    const form = new FormData(event.currentTarget);
-    const password = String(form.get("password"));
-    if (password !== String(form.get("password_confirm"))) {
-      setAuthMessage("Las contraseñas no coinciden.");
-      return;
-    }
+  async function resendConfirmation() {
+    if (!supabase || !authEmail) return;
     setLoginBusy(true);
-    const { error } = await supabase.auth.updateUser({ password });
+    const { error } = await supabase.auth.resend({
+      type: "signup",
+      email: authEmail,
+      options: { emailRedirectTo: `${window.location.origin}/?view=perfil` },
+    });
     setLoginBusy(false);
-    if (error) { setAuthMessage("No se pudo actualizar la contraseña. Solicita un enlace nuevo e inténtalo otra vez."); return; }
-    setAuthOpen(false);
-    setAuthMode("signin");
-    setAuthMessage("");
-    setNotice("Contraseña actualizada correctamente.");
+    setAuthMessage(error ? "No se pudo reenviar ahora. Espera un momento e inténtalo otra vez." : "Si la cuenta sigue pendiente de confirmación, recibirás un nuevo correo.");
+  }
+
+  async function changePassword(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!supabase || !user) return;
+    const formElement = event.currentTarget;
+    const form = new FormData(event.currentTarget);
+    const currentPassword = String(form.get("current_password"));
+    const password = String(form.get("password"));
+    if (password !== String(form.get("password_confirm"))) { setNotice("La nueva contraseña y su confirmación no coinciden."); return; }
+    if (password.length < 8) { setNotice("La nueva contraseña debe tener al menos 8 caracteres."); return; }
+    setLoginBusy(true);
+    const { error } = await supabase.auth.updateUser({ password, current_password: currentPassword });
+    setLoginBusy(false);
+    if (error) { setNotice("No se pudo cambiar la contraseña. Revisa la contraseña actual e inténtalo otra vez."); return; }
+    setNotice("Contraseña cambiada correctamente.");
+    formElement.reset();
   }
 
   async function signOut() {
@@ -367,10 +374,40 @@ export default function Home() {
     if (!supabase || !user) { setAuthOpen(true); return; }
     const form = new FormData(event.currentTarget);
     const changes = { nombre: String(form.get("nombre")).trim(), apodo: String(form.get("apodo")).trim(), ciudad: String(form.get("ciudad")).trim(), club_favorito_id: String(form.get("club_favorito_id") || "") || null };
-    const { data, error } = await supabase.from("perfiles").update(changes).eq("id", user.id).select("nombre,apodo,ciudad,club_favorito_id").single();
+    const { data, error } = await supabase.from("perfiles").update(changes).eq("id", user.id).select("nombre,apodo,ciudad,club_favorito_id,avatar_url").single();
     if (error) { setNotice(`No se pudo guardar el perfil: ${error.message}`); return; }
     setProfile(data as Profile);
     setNotice("Perfil actualizado.");
+  }
+
+  async function uploadAvatar(file: File) {
+    if (!supabase || !user) throw new Error("Inicia sesión para cambiar tu foto.");
+    const extensionByMime: Record<string, string> = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp" };
+    const extension = extensionByMime[file.type];
+    if (!extension) throw new Error("Elige una imagen JPG, PNG o WEBP.");
+    if (file.size > 2 * 1024 * 1024) throw new Error("La foto debe pesar 2 MB o menos.");
+
+    const path = `${user.id}/avatar.${extension}`;
+    const { error: uploadError } = await supabase.storage.from("avatars").upload(path, file, {
+      upsert: true,
+      cacheControl: "3600",
+      contentType: file.type,
+    });
+    if (uploadError) throw new Error("No se pudo subir la foto. Comprueba que el esquema de Supabase esté aplicado.");
+
+    const { data } = supabase.storage.from("avatars").getPublicUrl(path);
+    const avatarUrl = `${data.publicUrl}?v=${Date.now()}`;
+    const { data: savedProfile, error: profileError } = await supabase.from("perfiles").update({ avatar_url: avatarUrl }).eq("id", user.id).select("nombre,apodo,ciudad,club_favorito_id,avatar_url").single();
+    if (profileError) throw new Error("La foto se subió, pero no se pudo guardar en el perfil. Ejecuta supabase/schema.sql en el proyecto.");
+
+    const oldUrl = profile?.avatar_url;
+    if (oldUrl) {
+      try {
+        const oldPath = new URL(oldUrl).pathname.split("/storage/v1/object/public/avatars/")[1];
+        if (oldPath && oldPath !== path) await supabase.storage.from("avatars").remove([decodeURIComponent(oldPath)]);
+      } catch { /* The updated profile remains valid even if an older file cannot be removed. */ }
+    }
+    setProfile(savedProfile as Profile);
   }
 
   async function createVirtualPrediction(matchId: string, selection: "local" | "empate" | "visitante", points: number) {
@@ -482,7 +519,7 @@ export default function Home() {
             </div>
             <button className="header-icon-button" onClick={() => setView("alertas")} aria-label="Ver alertas" title="Alertas">♧</button>
             <span className={`connection-pill ${database === "connected" ? "ok" : "demo"}`}><i />{database === "connected" ? "Datos en línea" : "Datos de muestra"}</span>
-            {user ? <><span className="user-label">{roleLabels[role ?? ""] ?? user.email}</span><button className="btn btn-quiet" onClick={() => void signOut()}>Cerrar sesión</button></> : <button className="btn btn-dark" onClick={() => setAuthOpen(true)}>Ingresar</button>}
+            {user ? <><button className="header-profile-link" onClick={() => setView("perfil")} aria-label="Abrir mi perfil"><span className="header-profile-avatar">{profile?.avatar_url ? <img src={profile.avatar_url} alt="" /> : (profile?.apodo || profile?.nombre || user.email || "LP").slice(0, 2).toUpperCase()}</span><span className="user-label">{profile?.apodo || roleLabels[role ?? ""] || user.email}</span></button><button className="btn btn-quiet" onClick={() => void signOut()}>Cerrar sesión</button></> : <button className="btn btn-dark" onClick={() => setAuthOpen(true)}>Ingresar</button>}
           </div>
         </header>
 
@@ -499,7 +536,7 @@ export default function Home() {
           {view === "portal" && <Portal clubs={clubs} standings={standings} matches={matches} bulletins={bulletins} clubName={clubName} clubShort={clubShort} loading={loading} onView={navigateTo} />}
           {view === "pronosticos" && <PredictionsPage matches={matches} clubName={clubName} balance={virtualBalance} isLoggedIn={Boolean(user)} profileComplete={Boolean(profile?.nombre.trim() && profile?.apodo.trim())} databaseConnected={database === "connected"} onLogin={() => { setAuthMode("signup"); setAuthOpen(true); }} onPlace={createVirtualPrediction} onView={navigateTo} />}
           {view === "misPronosticos" && <MyPredictionsPage predictions={myPredictions} matches={matches} clubName={clubName} isLoggedIn={Boolean(user)} onLogin={() => { setAuthMode("signin"); setAuthOpen(true); }} onView={navigateTo} />}
-          {view === "perfil" && <ProfilePage user={user} profile={profile} clubs={clubs} balance={virtualBalance} predictionCount={myPredictions.length} onSave={saveProfile} onSignIn={() => { setAuthMode("signin"); setAuthMessage(""); setAuthOpen(true); }} onSignUp={() => { setAuthMode("signup"); setAuthMessage(""); setAuthOpen(true); }} onRecover={() => { setAuthMode("recovery"); setAuthMessage(""); setAuthOpen(true); }} onChangePassword={() => { setAuthMode("update-password"); setAuthMessage(""); setAuthOpen(true); }} onSignOut={() => void signOut()} onView={navigateTo} />}
+          {view === "perfil" && <ProfilePage user={user} profile={profile} clubs={clubs} balance={virtualBalance} predictionCount={myPredictions.length} onSave={saveProfile} onUploadAvatar={uploadAvatar} onChangePassword={changePassword} passwordBusy={loginBusy} onSignIn={() => { setAuthMode("signin"); setAuthMessage(""); setAuthOpen(true); }} onSignUp={() => { setAuthMode("signup"); setAuthMessage(""); setAuthOpen(true); }} onRecover={() => { setAuthEmail(user?.email ?? authEmail); setAuthMode("recovery"); setAuthMessage(""); setAuthOpen(true); }} onSignOut={() => void signOut()} onView={navigateTo} />}
           {view === "tabla" && <PublicTablePage clubs={clubs} standings={standings} clubName={clubName} onView={navigateTo} />}
           {view === "calendario" && <CalendarPage clubs={clubs} matches={matches} clubName={clubName} onView={navigateTo} />}
           {view === "partido" && <MatchDetailPage clubs={clubs} match={activeMatch} clubName={clubName} onView={navigateTo} />}
@@ -535,26 +572,25 @@ export default function Home() {
           <button className="modal-close" onClick={() => setAuthOpen(false)} aria-label="Cerrar">×</button>
           <div className="brand-crest large">LP</div>
           <p className="eyebrow">CUENTA DE AFICIONADO Y ACCESO</p>
-          <h2 id="login-title">{authMode === "signin" ? "Ingresa a tu cuenta" : authMode === "signup" ? "Crea tu cuenta" : authMode === "recovery" ? "Recupera tu contraseña" : "Define una contraseña nueva"}</h2>
-          <p className="muted">{authMode === "recovery" ? "Te enviaremos un enlace seguro a tu correo para restablecer el acceso." : authMode === "update-password" ? "Elige una contraseña de al menos 8 caracteres." : "El acceso a cada módulo depende del rol asignado a tu perfil."}</p>
-          <form onSubmit={authMode === "signin" ? signIn : authMode === "signup" ? signUp : authMode === "recovery" ? recoverPassword : updatePassword} className="form-stack">
+          <h2 id="login-title">{authMode === "signin" ? "Ingresa a tu cuenta" : authMode === "signup" ? "Crea tu cuenta" : authMode === "recovery" ? "Recupera tu contraseña" : "Confirma tu correo"}</h2>
+          <p className="muted">{authMode === "recovery" ? "Te enviaremos un enlace seguro a tu correo para restablecer el acceso." : authMode === "confirmation" ? "Confirma tu dirección para activar el acceso a tu cuenta." : "El acceso a cada módulo depende del rol asignado a tu perfil."}</p>
+          {authMode === "confirmation" ? <div className="confirmation-panel"><p className="auth-message" role="status">{authMessage || "Revisa tu correo para confirmar tu cuenta."}</p><strong>{authEmail}</strong><button className="btn btn-gold full" type="button" disabled={loginBusy} onClick={() => void resendConfirmation()}>{loginBusy ? "Enviando…" : "Reenviar correo de confirmación"}</button><button className="auth-switch" type="button" onClick={() => { setAuthMode("signin"); setAuthMessage(""); }}>Volver a iniciar sesión</button></div> : <form onSubmit={authMode === "signin" ? signIn : authMode === "signup" ? signUp : recoverPassword} className="form-stack">
             {authMode === "signup" && <>
               <label>Nombre completo<input name="full_name" type="text" required maxLength={80} autoComplete="name" placeholder="Tu nombre y apellido" /></label>
               <label>Apodo<input name="nickname" type="text" required maxLength={30} autoComplete="nickname" placeholder="Cómo te verán en la comunidad" /></label>
               <label>Ciudad <span className="muted">(opcional)</span><input name="city" type="text" maxLength={60} autoComplete="address-level2" placeholder="Quito, Guayaquil…" /></label>
             </>}
-            {(authMode === "signin" || authMode === "signup" || authMode === "recovery") && <label>Correo electrónico<input name="email" type="email" required autoComplete="email" value={authEmail} onChange={(event) => setAuthEmail(event.target.value)} placeholder="nombre@ligapro.ec" /></label>}
-            {(authMode === "signin" || authMode === "signup" || authMode === "update-password") && <label>{authMode === "update-password" ? "Nueva contraseña" : "Contraseña"}<input name="password" type="password" required minLength={8} autoComplete={authMode === "signin" ? "current-password" : "new-password"} placeholder="Mínimo 8 caracteres" /></label>}
-            {(authMode === "signup" || authMode === "update-password") && <label>Confirma la contraseña<input name="password_confirm" type="password" required minLength={8} autoComplete="new-password" placeholder="Repite tu contraseña" /></label>}
+            <label>Correo electrónico<input name="email" type="email" required autoComplete="email" value={authEmail} onChange={(event) => setAuthEmail(event.target.value)} placeholder="nombre@ligapro.ec" /></label>
+            {authMode !== "recovery" && <label>Contraseña<input name="password" type="password" required minLength={8} autoComplete={authMode === "signin" ? "current-password" : "new-password"} placeholder="Mínimo 8 caracteres" /></label>}
+            {authMode === "signup" && <label>Confirma la contraseña<input name="password_confirm" type="password" required minLength={8} autoComplete="new-password" placeholder="Repite tu contraseña" /></label>}
             {authMessage && <p className="auth-message" role="status">{authMessage}</p>}
-            <button className="btn btn-gold full" disabled={loginBusy}>{loginBusy ? "Procesando…" : authMode === "signin" ? "Iniciar sesión" : authMode === "signup" ? "Crear cuenta" : authMode === "recovery" ? "Enviar enlace de recuperación" : "Actualizar contraseña"}</button>
-          </form>
+            <button className="btn btn-gold full" disabled={loginBusy}>{loginBusy ? "Procesando…" : authMode === "signin" ? "Iniciar sesión" : authMode === "signup" ? "Crear cuenta" : "Enviar enlace de recuperación"}</button>
+          </form>}
           {authMode === "signin" && <button className="auth-switch" type="button" onClick={() => { setAuthMode("recovery"); setAuthMessage(""); }}>¿Olvidaste tu contraseña?</button>}
           {(authMode === "signin" || authMode === "signup") && <button className="auth-switch" type="button" onClick={() => { setAuthMode(authMode === "signin" ? "signup" : "signin"); setAuthMessage(""); }}>
             {authMode === "signin" ? "¿No tienes cuenta? Crear cuenta" : "¿Ya tienes cuenta? Iniciar sesión"}
           </button>}
           {authMode === "recovery" && <button className="auth-switch" type="button" onClick={() => { setAuthMode("signin"); setAuthMessage(""); }}>Volver a iniciar sesión</button>}
-          {authMode === "update-password" && user && <button className="auth-switch" type="button" onClick={() => setAuthOpen(false)}>Cancelar</button>}
           {(authMode === "signin" || authMode === "signup") && <p className="auth-footnote">Las cuentas nuevas tienen rol público. Los pronósticos usan únicamente puntos virtuales sin depósitos ni retiros.</p>}
         </section>
       </div>}
@@ -608,8 +644,36 @@ function MyPredictionsPage({ predictions, matches, clubName, isLoggedIn, onLogin
   </>;
 }
 
-function ProfilePage({ user, profile, clubs, balance, predictionCount, onSave, onSignIn, onSignUp, onRecover, onChangePassword, onSignOut, onView }: { user: User | null; profile: Profile | null; clubs: Club[]; balance: number; predictionCount: number; onSave: (event: FormEvent<HTMLFormElement>) => void; onSignIn: () => void; onSignUp: () => void; onRecover: () => void; onChangePassword: () => void; onSignOut: () => void; onView: (view: View) => void }) {
-  const [draft, setDraft] = useState<Profile>({ nombre: "", apodo: "", ciudad: "", club_favorito_id: "" });
+function ProfilePage({ user, profile, clubs, balance, predictionCount, onSave, onUploadAvatar, onChangePassword, passwordBusy, onSignIn, onSignUp, onRecover, onSignOut, onView }: { user: User | null; profile: Profile | null; clubs: Club[]; balance: number; predictionCount: number; onSave: (event: FormEvent<HTMLFormElement>) => void; onUploadAvatar: (file: File) => Promise<void>; onChangePassword: (event: FormEvent<HTMLFormElement>) => void; passwordBusy: boolean; onSignIn: () => void; onSignUp: () => void; onRecover: () => void; onSignOut: () => void; onView: (view: View) => void }) {
+  const [draft, setDraft] = useState<Profile>({ nombre: "", apodo: "", ciudad: "", club_favorito_id: "", avatar_url: null });
+  const [passwordOpen, setPasswordOpen] = useState(false);
+  const [avatarBusy, setAvatarBusy] = useState(false);
+  const [avatarMessage, setAvatarMessage] = useState("");
+  const avatarInput = useRef<HTMLInputElement>(null);
+
+  async function handleAvatarSelect(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.currentTarget.files?.[0];
+    event.currentTarget.value = "";
+    if (!file) return;
+    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) { setAvatarMessage("Elige una foto JPG, PNG o WEBP."); return; }
+    if (file.size > 2 * 1024 * 1024) { setAvatarMessage("La foto debe pesar 2 MB o menos."); return; }
+    setAvatarBusy(true);
+    setAvatarMessage("");
+    try {
+      const signature = new Uint8Array(await file.slice(0, 12).arrayBuffer());
+      const isJpeg = signature[0] === 0xff && signature[1] === 0xd8 && signature[2] === 0xff;
+      const isPng = signature.slice(0, 8).join(",") === "137,80,78,71,13,10,26,10";
+      const isWebp = String.fromCharCode(...signature.slice(0, 4)) === "RIFF" && String.fromCharCode(...signature.slice(8, 12)) === "WEBP";
+      if (!isJpeg && !isPng && !isWebp) throw new Error("El archivo no parece ser una imagen JPG, PNG o WEBP válida.");
+      await onUploadAvatar(file);
+      setAvatarMessage("Foto de perfil actualizada.");
+    } catch (error) {
+      setAvatarMessage(error instanceof Error ? error.message : "No se pudo actualizar la foto.");
+    } finally {
+      setAvatarBusy(false);
+    }
+  }
+
   useEffect(() => {
     if (!user) return;
     setDraft({
@@ -617,14 +681,16 @@ function ProfilePage({ user, profile, clubs, balance, predictionCount, onSave, o
       apodo: profile?.apodo ?? String(user.user_metadata?.nickname ?? ""),
       ciudad: profile?.ciudad ?? String(user.user_metadata?.city ?? ""),
       club_favorito_id: profile?.club_favorito_id ?? "",
+      avatar_url: profile?.avatar_url ?? null,
     });
   }, [profile, user]);
   if (!user) return <><PageHeading eyebrow="PAN-030 · REGISTRO DE AFICIONADO" title="Mi perfil LigaPro" subtitle="Accede a tu cuenta, actualiza tus datos y participa en los pronósticos con puntos virtuales."/><section className="profile-signup panel"><div className="profile-avatar">LP</div><div className="profile-signup-content"><span className="eyebrow">TU CUENTA DE AFICIONADO</span><h2>Todo tu seguimiento en un solo lugar</h2><p>Guarda tu nombre, apodo, ciudad y club favorito. Consulta tu actividad, administra tu acceso y explora los partidos de pronósticos.</p><div className="profile-actions"><button className="btn btn-dark" onClick={onSignIn}>Iniciar sesión</button><button className="btn btn-gold" onClick={onSignUp}>Crear cuenta gratis</button><button className="btn btn-light" onClick={onRecover}>Recuperar contraseña</button></div></div></section><div className="profile-feature-grid"><button className="panel profile-feature" onClick={() => onView("pronosticos")}><span>⚽</span><strong>Pronósticos</strong><small>Elige resultados con puntos de juego virtuales.</small></button><button className="panel profile-feature" onClick={() => onView("misPronosticos")}><span>▤</span><strong>Mi actividad</strong><small>Consulta tus pronósticos guardados al iniciar sesión.</small></button></div></>;
   return <>
     <PageHeading eyebrow="PAN-030 · PERFIL DE AFICIONADO" title="Mi perfil" subtitle="Edita tus datos, revisa tu actividad y administra la seguridad de tu cuenta."><button className="btn btn-light" onClick={() => onView("pronosticos")}>⚽ Ver pronósticos</button></PageHeading>
-    <div className="profile-layout"><section className="panel profile-summary"><div className="profile-avatar">{(profile?.apodo || profile?.nombre || user.email || "LP").slice(0, 2).toUpperCase()}</div><span className="pill pill-green">Cuenta activa</span><h2>{profile?.apodo || "Aficionado"}</h2><p>{user.email}</p><div className="profile-summary-foot"><span>Miembro desde</span><strong>{new Date(user.created_at).toLocaleDateString("es-EC", { month: "short", year: "numeric" })}</strong></div><div className="profile-account-actions"><button className="btn btn-light" onClick={() => document.getElementById("profile-editor")?.scrollIntoView({ behavior: "smooth", block: "center" })}>Editar perfil</button><button className="btn btn-light" onClick={onChangePassword}>Cambiar contraseña</button><button className="btn btn-quiet" onClick={onSignOut}>Cerrar sesión</button></div></section>
+    <div className="profile-layout"><section className="panel profile-summary"><div className="profile-photo-control"><div className="profile-avatar">{profile?.avatar_url ? <img src={profile.avatar_url} alt={`Foto de ${profile.apodo || profile.nombre || "perfil"}`} /> : (profile?.apodo || profile?.nombre || user.email || "LP").slice(0, 2).toUpperCase()}</div><button className="btn btn-light" onClick={() => avatarInput.current?.click()} disabled={avatarBusy || !profile}>{avatarBusy ? "Subiendo foto…" : profile?.avatar_url ? "Cambiar foto" : "Subir foto"}</button><input ref={avatarInput} className="sr-only" type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => void handleAvatarSelect(event)} /><small>JPG, PNG o WEBP · máximo 2 MB</small>{avatarMessage && <p className="avatar-message" role="status">{avatarMessage}</p>}</div><span className="pill pill-green">Cuenta activa</span><h2>{profile?.apodo || "Aficionado"}</h2><p>{user.email}</p><div className="profile-summary-foot"><span>Miembro desde</span><strong>{new Date(user.created_at).toLocaleDateString("es-EC", { month: "short", year: "numeric" })}</strong></div><div className="profile-account-actions"><button className="btn btn-light" onClick={() => document.getElementById("profile-editor")?.scrollIntoView({ behavior: "smooth", block: "center" })}>Editar perfil</button><button className="btn btn-light" onClick={() => setPasswordOpen((open) => !open)}>{passwordOpen ? "Ocultar cambio de contraseña" : "Cambiar contraseña"}</button><button className="btn btn-quiet" onClick={onSignOut}>Cerrar sesión</button></div></section>
     <section className="profile-main-column"><div className="profile-feature-grid"><article className="panel profile-stat"><span>PRONÓSTICOS GUARDADOS</span><strong>{predictionCount}</strong><button className="text-link" onClick={() => onView("misPronosticos")}>Ver mi actividad →</button></article><article className="panel profile-stat"><span>SALDO DE JUEGO VIRTUAL</span><strong>{balance.toLocaleString("es-EC")} pts</strong><small>Sin valor monetario ni canje</small></article></div>
-    <section className="panel form-panel profile-form-panel" id="profile-editor"><div className="panel-heading"><div><p className="eyebrow">INFORMACIÓN PERSONAL</p><h2>Editar datos de perfil</h2></div><span className="pill">Privado por defecto</span></div><form className="profile-form" onSubmit={onSave}><label>Nombre completo<input name="nombre" required maxLength={80} autoComplete="name" value={draft.nombre} onChange={(event) => setDraft({ ...draft, nombre: event.target.value })} placeholder="Nombre y apellido"/></label><label>Apodo<input name="apodo" required maxLength={30} autoComplete="nickname" value={draft.apodo} onChange={(event) => setDraft({ ...draft, apodo: event.target.value })} placeholder="Cómo te verá la comunidad"/></label><label>Ciudad <span className="muted">(opcional)</span><input name="ciudad" maxLength={60} autoComplete="address-level2" value={draft.ciudad} onChange={(event) => setDraft({ ...draft, ciudad: event.target.value })} placeholder="Ciudad"/></label><label>Club favorito <span className="muted">(opcional)</span><select name="club_favorito_id" value={draft.club_favorito_id ?? ""} onChange={(event) => setDraft({ ...draft, club_favorito_id: event.target.value })}><option value="">No elegir por ahora</option>{clubs.map((club) => <option key={club.id} value={club.id}>{club.nombre}</option>)}</select></label><div className="form-actions"><p className="muted">Tu correo se administra de forma segura con Supabase Auth.</p><button className="btn btn-gold">Guardar cambios</button></div></form></section></section></div>
+    <section className="panel form-panel profile-form-panel" id="profile-editor"><div className="panel-heading"><div><p className="eyebrow">INFORMACIÓN PERSONAL</p><h2>Editar datos de perfil</h2></div><span className="pill">Privado por defecto</span></div><form className="profile-form" onSubmit={onSave}><label>Nombre completo<input name="nombre" required maxLength={80} autoComplete="name" value={draft.nombre} onChange={(event) => setDraft({ ...draft, nombre: event.target.value })} placeholder="Nombre y apellido"/></label><label>Apodo<input name="apodo" required maxLength={30} autoComplete="nickname" value={draft.apodo} onChange={(event) => setDraft({ ...draft, apodo: event.target.value })} placeholder="Cómo te verá la comunidad"/></label><label>Ciudad <span className="muted">(opcional)</span><input name="ciudad" maxLength={60} autoComplete="address-level2" value={draft.ciudad} onChange={(event) => setDraft({ ...draft, ciudad: event.target.value })} placeholder="Ciudad"/></label><label>Club favorito <span className="muted">(opcional)</span><select name="club_favorito_id" value={draft.club_favorito_id ?? ""} onChange={(event) => setDraft({ ...draft, club_favorito_id: event.target.value })}><option value="">No elegir por ahora</option>{clubs.map((club) => <option key={club.id} value={club.id}>{club.nombre}</option>)}</select></label><div className="form-actions"><p className="muted">Tu correo se administra de forma segura con Supabase Auth.</p><button className="btn btn-gold">Guardar cambios</button></div></form></section>
+    {passwordOpen && <section className="panel form-panel profile-form-panel" id="password-editor"><div className="panel-heading"><div><p className="eyebrow">SEGURIDAD DE LA CUENTA</p><h2>Cambiar contraseña</h2></div><span className="pill">Verificaremos tu contraseña actual</span></div><form className="password-change-form" onSubmit={onChangePassword}><label>Contraseña actual<input name="current_password" type="password" required autoComplete="current-password" placeholder="Tu contraseña actual"/></label><label>Nueva contraseña<input name="password" type="password" required minLength={8} autoComplete="new-password" placeholder="Mínimo 8 caracteres"/></label><label>Confirma la nueva contraseña<input name="password_confirm" type="password" required minLength={8} autoComplete="new-password" placeholder="Repite la nueva contraseña"/></label><div className="profile-password-actions"><button className="btn btn-gold" disabled={passwordBusy}>{passwordBusy ? "Actualizando…" : "Guardar contraseña"}</button><button className="text-link" type="button" onClick={onRecover}>¿Olvidaste tu contraseña actual?</button></div></form></section>}</section></div>
   </>;
 }
 
