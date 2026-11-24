@@ -27,6 +27,7 @@ where estado = 'en_vivo' and reloj_inicio_at is null;
 alter table public.incidencias drop constraint if exists incidencias_tipo_check;
 alter table public.incidencias add constraint incidencias_tipo_check
   check (tipo in ('gol', 'sustitucion', 'amarilla', 'roja', 'var', 'observacion', 'lesion', 'inicio', 'medio_tiempo', 'inicio_segundo_tiempo', 'final'));
+alter table public.incidencias alter column club_id drop not null;
 
 -- Eventos de partido visibles solo cuando son datos de marcador/cronologia publica.
 drop policy if exists incidencias_live_public_select on public.incidencias;
@@ -145,7 +146,7 @@ begin
   end if;
 
   insert into public.incidencias (partido_id, club_id, jugador_id, jugador_secundario_id, minuto, tipo, detalle, registrado_por)
-  values (p_partido_id, case when v_tipo in ('gol', 'sustitucion', 'amarilla', 'roja') then p_club_id else v_partido.club_local_id end, p_jugador_id, p_jugador_secundario_id, v_minuto, v_tipo, coalesce(btrim(p_detalle), ''), v_usuario)
+  values (p_partido_id, p_club_id, p_jugador_id, p_jugador_secundario_id, v_minuto, v_tipo, coalesce(btrim(p_detalle), ''), v_usuario)
   returning id into v_evento;
   return v_evento;
 end;

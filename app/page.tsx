@@ -199,7 +199,7 @@ export default function Home() {
       client.from("sanciones").select("id,jugador:jugadores(nombre),club:clubes(nombre),infraccion,jornadas_suspension,estado,created_at").order("created_at", { ascending: false }).limit(30),
       client.from("incidencias").select("id,partido_id,minuto,tipo,club_id,detalle").order("created_at", { ascending: true }).limit(100),
       client.from("comunicados").select("id,titulo,categoria,resumen,publicado_at").eq("estado", "publicado").order("publicado_at", { ascending: false }).limit(12),
-      client.from("ranking_pronosticos").select("posicion,apodo,puntos,aciertos,total_pronosticos").order("posicion").limit(10),
+      client.rpc("obtener_ranking_pronosticos").limit(10),
     ]);
 
     if (clubResult.error || matchResult.error) {
@@ -254,7 +254,7 @@ export default function Home() {
   }, []);
 
   const loadLeaderboard = useCallback(async (client: SupabaseClient) => {
-    const { data, error } = await client.from("ranking_pronosticos").select("posicion,apodo,puntos,aciertos,total_pronosticos").order("posicion").limit(10);
+    const { data, error } = await client.rpc("obtener_ranking_pronosticos").limit(10);
     if (!error && data) setLeaderboard(data as LeaderboardRow[]);
   }, []);
 
